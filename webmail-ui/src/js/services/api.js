@@ -48,7 +48,7 @@ async function request(path, options = {}) {
 }
 
 export async function login(username, password) {
-  const data = await request("/api/v1/auth/session", {
+  const data = await request("/v1/auth/session", {
     method: "POST",
     body: JSON.stringify({ username, password })
   });
@@ -57,7 +57,7 @@ export async function login(username, password) {
 }
 
 export async function logout() {
-  const response = await fetch(`${apiBase}/api/v1/auth/session`, {
+  const response = await fetch(`${apiBase}/v1/auth/session`, {
     method: "DELETE",
     credentials: "include"
   });
@@ -69,8 +69,8 @@ export async function logout() {
 
 export async function bootstrapData() {
   const [sessionData, mailboxData] = await Promise.all([
-    request("/api/v1/auth/me"),
-    request("/api/v1/mailboxes")
+    request("/v1/auth/me"),
+    request("/v1/mailboxes")
   ]);
 
   return {
@@ -84,17 +84,17 @@ export async function fetchMessages(mailboxId, folder, query = "") {
   if (folder) search.set("folder", folder);
   if (query) search.set("q", query);
 
-  const data = await request(`/api/v1/mailboxes/${mailboxId}?${search.toString()}`);
+  const data = await request(`/v1/mailboxes/${mailboxId}?${search.toString()}`);
   return data;
 }
 
 export async function fetchMessageDetail(messageId) {
-  const data = await request(`/api/v1/messages/${messageId}`);
+  const data = await request(`/v1/messages/${messageId}`);
   return data.message;
 }
 
 export async function sendMessage(payload) {
-  return request("/api/v1/messages/send", {
+  return request("/v1/messages/send", {
     method: "POST",
     body: JSON.stringify(payload)
   });
