@@ -11,14 +11,10 @@ function formatLongTime(timestamp) {
 export function renderMailView(message, loading) {
   if (loading) {
     return `
-      <div class="mail-view-card">
-        <div class="skeleton skeleton-line medium"></div>
-        <div class="sender-card">
-          <div class="skeleton skeleton-line short"></div>
-        </div>
+      <div style="padding: 40px">
+        <div class="skeleton skeleton-line long" style="height: 32px; margin-bottom: 40px"></div>
+        <div class="skeleton skeleton-line medium" style="margin-bottom: 24px"></div>
         <div class="skeleton skeleton-line long"></div>
-        <div class="skeleton skeleton-line long"></div>
-        <div class="skeleton skeleton-line medium"></div>
       </div>
     `;
   }
@@ -26,78 +22,24 @@ export function renderMailView(message, loading) {
   if (!message) {
     return `
       <div class="mail-view-empty">
-        <div class="empty-state-card">
-          <strong>Select a conversation</strong>
-          <p>Thread preview, reply actions, attachments, and message metadata are ready here for backend integration.</p>
-        </div>
+        <p class="eyebrow">Select a conversation</p>
       </div>
     `;
   }
 
-  const attachments = message.attachments.length
-    ? `
-      <section>
-        <p class="eyebrow">Attachments</p>
-        <div class="attachment-grid">
-          ${message.attachments.map((attachment) => `
-            <article class="attachment-card">
-              <strong>${attachment.name}</strong>
-              <span>${attachment.type} · ${attachment.size}</span>
-            </article>
-          `).join("")}
-        </div>
-      </section>
-    `
-    : "";
-
-  const thread = message.thread.length
-    ? `
-      <section>
-        <div class="thread-actions">
-          <button class="ghost-button">Reply</button>
-          <button class="ghost-button">Forward</button>
-          <button class="ghost-button">Open thread</button>
-        </div>
-        <div class="thread-list">
-          ${message.thread.map((item) => `
-            <article class="thread-card">
-              <strong>${item.author}</strong>
-              <p class="thread-meta">${item.time}</p>
-              <p>${item.summary}</p>
-            </article>
-          `).join("")}
-        </div>
-      </section>
-    `
-    : "";
-
   return `
-    <article class="mail-view-card">
-      <header class="mail-view-header">
-        <div>
-          <p class="eyebrow">${message.folder}</p>
-          <h2 class="mail-view-subject">${message.subject}</h2>
-        </div>
-        <div class="mail-actions">
-          <button class="ghost-button" data-action="star">${message.starred ? "Unstar" : "Star"}</button>
-          <button class="ghost-button" data-action="spam">Spam</button>
-          <button class="ghost-button" data-action="delete">Delete</button>
-        </div>
-      </header>
+    <article class="mail-view-container">
+      <h2 class="mail-view-subject">${message.subject}</h2>
 
-      <section class="sender-card">
-        <div class="sender-line">
-          <div class="sender-avatar">${message.senderName.slice(0, 2).toUpperCase()}</div>
-          <div class="sender-copy">
-            <strong>${message.senderName} &lt;${message.senderEmail}&gt;</strong>
-            <span>To ${message.recipients.join(", ")} · ${formatLongTime(message.timestamp)}</span>
-          </div>
+      <div class="sender-card">
+        <div class="sender-avatar">${message.senderName.slice(0, 1).toUpperCase()}</div>
+        <div class="sender-copy">
+          <strong>${message.senderName}</strong>
+          <span>${message.senderEmail} · ${formatLongTime(message.timestamp)}</span>
         </div>
-      </section>
+      </div>
 
-      <section class="mail-body">${message.body}</section>
-      ${attachments}
-      ${thread}
+      <div class="mail-body">${message.body}</div>
     </article>
   `;
 }

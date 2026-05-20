@@ -1,39 +1,33 @@
 export function renderSidebar(state) {
-  const folderItems = state.folders.map((folder) => `
-    <button class="nav-item ${folder.id === state.activeFolderId ? "active" : ""}" data-folder-id="${folder.id}">
-      <div class="nav-icon">${folder.icon.toUpperCase()}</div>
-      <div class="nav-text">
-        <strong>${folder.label}</strong>
-        <span>${folder.hint}</span>
-      </div>
-      <div class="badge">${folder.count}</div>
-    </button>
-  `).join("");
+  const folderItems = state.folders.map((folder) => {
+    const isActive = folder.id === state.activeFolderId;
+    return `
+      <button class="nav-item ${isActive ? "active" : ""}" data-folder-id="${folder.id}">
+        <span class="nav-icon">${folder.icon.toUpperCase()}</span>
+        <span class="nav-text">${folder.label}</span>
+        ${folder.count > 0 ? `<span class="badge" style="background: none; border: 1px solid var(--border); font-size: 10px">${folder.count}</span>` : ""}
+      </button>
+    `;
+  }).join("");
 
-  const mailboxItems = state.mailboxes.map((mailbox) => `
-    <button class="mailbox-item ${mailbox.id === state.activeMailboxId ? "active" : ""}" data-mailbox-id="${mailbox.id}">
-      <div class="mailbox-avatar">${mailbox.initials}</div>
-      <div class="mailbox-meta">
-        <strong>${mailbox.name}</strong>
-        <span>${mailbox.email}</span>
-      </div>
-    </button>
-  `).join("");
+  const mailboxItems = state.mailboxes.map((mailbox) => {
+    const isActive = mailbox.id === state.activeMailboxId;
+    return `
+      <button class="nav-item ${isActive ? "active" : ""}" data-mailbox-id="${mailbox.id}">
+        <span class="nav-icon">${mailbox.initials}</span>
+        <span class="nav-text">${mailbox.name}</span>
+      </button>
+    `;
+  }).join("");
 
   return `
     <section class="sidebar-section">
-      <div class="mailbox-switcher">
-        <strong>${state.session?.displayName || "Frontend shell only"}</strong>
-        <span>${state.session?.email || "Ready for API binding over the existing Postfix + Dovecot stack."}</span>
-      </div>
+      <p class="eyebrow" style="padding: 0 16px 12px">Mailboxes</p>
+      <div class="nav-list">${mailboxItems}</div>
     </section>
-    <section class="sidebar-section">
-      <p class="eyebrow">Folders</p>
+    <section class="sidebar-section" style="margin-top: 32px">
+      <p class="eyebrow" style="padding: 0 16px 12px">Navigation</p>
       <div class="nav-list">${folderItems}</div>
-    </section>
-    <section class="sidebar-section">
-      <p class="eyebrow">Mailboxes</p>
-      <div class="mailbox-list">${mailboxItems}</div>
     </section>
   `;
 }

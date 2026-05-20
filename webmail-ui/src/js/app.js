@@ -24,43 +24,33 @@ function renderAppShell() {
         </button>
         <div class="brand-mark">
           <div class="brand-badge">C</div>
-          <div>
-            <p class="eyebrow">Codecoder Mail</p>
-            <h1>Inbox</h1>
-          </div>
+          <h1 class="eyebrow">Codecoder</h1>
         </div>
         <section class="search-host" id="searchBar"></section>
         <div class="profile-chip">
-          <div class="presence-dot"></div>
-          <div class="profile-actions">
-            <div class="profile-stack">
-              <strong>${state.session?.email || ""}</strong>
-              <span>${state.session?.displayName || ""}</span>
-            </div>
-            <button class="ghost-button" id="logoutButton">Logout</button>
+          <div class="profile-stack" style="text-align: right">
+            <strong>${state.session?.email || ""}</strong>
+            <span class="eyebrow" style="display: block; font-size: 9px; margin-top: 2px">${state.session?.displayName || ""}</span>
           </div>
+          <button class="ghost-button" id="logoutButton" style="padding: 6px 10px; font-size: 11px; margin-left: 12px">Logout</button>
         </div>
       </header>
       <section class="content-grid">
-        <section class="panel mail-list-panel">
+        <section class="mail-list-panel">
           <div class="panel-header">
-            <div>
-              <p class="eyebrow">Messages</p>
-              <h2 id="folderTitle">Inbox</h2>
-            </div>
+            <h2 class="eyebrow" id="folderTitle">Inbox</h2>
             <div class="header-actions">
-              <button class="ghost-button" id="refreshButton">Refresh</button>
-              <button class="primary-button" id="composeButton">Compose</button>
+              <button class="ghost-button" id="refreshButton" style="padding: 6px 10px; font-size: 11px">Refresh</button>
+              <button class="primary-button" id="composeButton" style="padding: 6px 12px; font-size: 11px">New Message</button>
             </div>
           </div>
           <div class="mail-list-toolbar">
-            <button class="filter-chip active">Unread</button>
-            <button class="filter-chip">Starred</button>
-            <button class="filter-chip">Attachments</button>
+            <button class="ghost-button active" style="padding: 4px 10px; font-size: 11px">All</button>
+            <button class="ghost-button" style="padding: 4px 10px; font-size: 11px">Unread</button>
           </div>
-          <div class="mail-list" id="mailList" aria-live="polite"></div>
+          <div class="mail-list" id="mailList"></div>
         </section>
-        <section class="panel mail-view-panel">
+        <section class="mail-view-panel">
           <div class="mail-view" id="mailView"></div>
         </section>
       </section>
@@ -69,34 +59,26 @@ function renderAppShell() {
 }
 
 function renderLoginShell() {
-  const loadingLabel = state.authLoading ? "Signing in..." : "Sign in";
+  const loadingLabel = state.authLoading ? "Authenticating..." : "Sign in";
 
   return `
     <section class="auth-card">
-      <div class="auth-header">
-        <div class="brand-mark">
-          <div class="brand-badge">C</div>
-          <div>
-            <p class="eyebrow">Codecoder Mail</p>
-            <h1>Sign in</h1>
-          </div>
-        </div>
-        <p>Use your mailbox username and password. Supported mailboxes are <strong>support</strong> and <strong>noreply</strong>.</p>
+      <div class="brand-mark">
+        <div class="brand-badge">C</div>
+        <h1 class="eyebrow">Codecoder Mail</h1>
       </div>
       <form class="auth-form" id="loginForm">
         <div class="auth-field">
-          <label for="loginUsername">Username</label>
-          <input class="auth-input" id="loginUsername" name="username" autocomplete="username" value="${state.loginForm.username}" placeholder="support">
+          <label>Username</label>
+          <input class="auth-input" id="loginUsername" name="username" placeholder="e.g. support" value="${state.loginForm.username}">
         </div>
         <div class="auth-field">
-          <label for="loginPassword">Password</label>
-          <input class="auth-input" id="loginPassword" name="password" type="password" autocomplete="current-password" value="${state.loginForm.password}" placeholder="Password">
+          <label>Password</label>
+          <input class="auth-input" id="loginPassword" name="password" type="password" placeholder="••••••••" value="${state.loginForm.password}">
         </div>
-        <div class="auth-footer">
-          <span class="auth-note">API base: https://mail.codecoder.in/api</span>
-          <button class="primary-button" type="submit" ${state.authLoading ? "disabled" : ""}>${loadingLabel}</button>
-        </div>
+        <button class="primary-button" type="submit" ${state.authLoading ? "disabled" : ""} style="width: 100%; margin-top: 12px">${loadingLabel}</button>
       </form>
+      <p class="eyebrow" style="margin-top: 24px; text-align: center; font-size: 9px">Secure Terminal Access</p>
     </section>
   `;
 }
@@ -105,13 +87,26 @@ function render() {
   const { app } = getElements();
 
   if (!state.session) {
-    app.className = "auth-shell";
-    app.innerHTML = renderLoginShell();
+    if (app.className !== "auth-shell") {
+      app.className = "auth-shell";
+      app.innerHTML = renderLoginShell();
+    } else {
+      const loginForm = document.querySelector("#loginForm");
+      if (loginForm) {
+        const submitBtn = loginForm.querySelector("button[type='submit']");
+        if (submitBtn) {
+          submitBtn.disabled = state.authLoading;
+          submitBtn.textContent = state.authLoading ? "Signing in..." : "Sign in";
+        }
+      }
+    }
     return;
   }
 
-  app.className = "app-shell";
-  app.innerHTML = renderAppShell();
+  if (app.className !== "app-shell") {
+    app.className = "app-shell";
+    app.innerHTML = renderAppShell();
+  }
 
   const visibleMessages = getVisibleMessages();
   const selected = getSelectedMessage();
@@ -121,12 +116,41 @@ function render() {
     state.selectedMessageId = selected.id;
   }
 
-  document.querySelector("#sidebar").innerHTML = renderSidebar(state);
-  document.querySelector("#searchBar").innerHTML = renderSearchBar(state.searchQuery);
-  document.querySelector("#mailList").innerHTML = renderMailList(visibleMessages, state.selectedMessageId, state.loading);
-  document.querySelector("#mailView").innerHTML = renderMailView(selected, state.loading);
-  document.querySelector("#composeModal").innerHTML = renderComposeModal(state);
-  document.querySelector("#folderTitle").textContent = activeFolder?.label || "Inbox";
+  const sidebar = document.querySelector("#sidebar");
+  if (sidebar) sidebar.innerHTML = renderSidebar(state);
+
+  const searchBar = document.querySelector("#searchBar");
+  if (searchBar) {
+    const existingSearch = searchBar.querySelector("#mailSearch");
+    if (!existingSearch || existingSearch.value !== state.searchQuery) {
+        searchBar.innerHTML = renderSearchBar(state.searchQuery);
+    }
+  }
+
+  const mailList = document.querySelector("#mailList");
+  if (mailList) mailList.innerHTML = renderMailList(visibleMessages, state.selectedMessageId, state.loading);
+
+  const mailView = document.querySelector("#mailView");
+  if (mailView) mailView.innerHTML = renderMailView(selected, state.loading);
+
+  const composeModal = document.querySelector("#composeModal");
+  if (composeModal) {
+    const isCurrentlyOpen = composeModal.querySelector(".compose-backdrop")?.classList.contains("open");
+    if (isCurrentlyOpen !== state.composeOpen) {
+       composeModal.innerHTML = renderComposeModal(state);
+    }
+  }
+
+  const folderTitle = document.querySelector("#folderTitle");
+  if (folderTitle) folderTitle.textContent = activeFolder?.label || "Inbox";
+
+  const profileStack = document.querySelector(".profile-stack");
+  if (profileStack) {
+    profileStack.innerHTML = `
+      <strong>${state.session?.email || ""}</strong>
+      <span>${state.session?.displayName || ""}</span>
+    `;
+  }
 }
 
 async function loadMessages() {

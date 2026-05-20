@@ -27,28 +27,32 @@ final class MailService
 
     public function listMailboxes(array $user): array
     {
-        return [
-            [
-                'id' => $user['mailboxId'],
-                'email' => $user['email'],
-                'name' => $user['displayName'],
-                'initials' => strtoupper(substr($user['displayName'], 0, 2)),
-                'status' => 'Primary mailbox',
-                'folders' => $this->folderStats($user['userId']),
-            ]
-        ];
+        $imap = $this->getConnectedClient($user['userId'], $_SESSION['imap_password']);
+        try {
+            return [
+                [
+                    'id' => $user['mailboxId'],
+                    'email' => $user['email'],
+                    'name' => $user['displayName'],
+                    'initials' => strtoupper(substr($user['displayName'], 0, 2)),
+                    'status' => 'Primary mailbox',
+                    'folders' => $this->folderStats($imap),
+                ]
+            ];
+        } finally {
+            $imap->logout();
+        }
     }
 
     public function listMessages(array $user, string $folderId, string $query = ''): array
     {
         $folderName = Config::FOLDER_MAP[$folderId] ?? Config::FOLDER_MAP['inbox'];
-        $imap = new ImapClient();
+        $imap = $this->getConnectedClient($user['userId'], $_SESSION['imap_password']);
 
         try {
-            $imap->connect();
-            $imap->login($user['userId'], $_SESSION['imap_password']);
             $imap->selectMailbox($folderName);
-            $headers = $imap->fetchHeaders($imap->searchUids(30));
+            $uids = $imap->searchUids(30, $query);
+            $headers = $imap->fetchHeaders($uids);
 
             $messages = array_map(function (array $message) use ($user, $folderId) {
                 $sender = $message['from'] ?: $user['email'];
@@ -69,13 +73,6 @@ final class MailService
                 ];
             }, $headers);
 
-            if ($query !== '') {
-                $q = strtolower($query);
-                $messages = array_values(array_filter($messages, function (array $message) use ($q) {
-                    return str_contains(strtolower($message['senderName'] . ' ' . $message['senderEmail'] . ' ' . $message['subject']), $q);
-                }));
-            }
-
             return $messages;
         } finally {
             $imap->logout();
@@ -90,11 +87,9 @@ final class MailService
         }
 
         $folderName = Config::FOLDER_MAP[$folderId] ?? Config::FOLDER_MAP['inbox'];
-        $imap = new ImapClient();
+        $imap = $this->getConnectedClient($user['userId'], $_SESSION['imap_password']);
 
         try {
-            $imap->connect();
-            $imap->login($user['userId'], $_SESSION['imap_password']);
             $imap->selectMailbox($folderName);
             $message = $imap->fetchMessage((int) $uid);
 
@@ -126,40 +121,40 @@ final class MailService
         }
     }
 
-    private function folderStats(string $username): array
+    private function getConnectedClient(string $username, string $password): ImapClient
     {
         $imap = new ImapClient();
+        $imap->connect();
+        $imap->login($username, $password);
+        return $imap;
+    }
+
+    private function folderStats(ImapClient $imap): array
+    {
         $folders = [];
 
-        try {
-            $imap->connect();
-            $imap->login($username, $_SESSION['imap_password']);
-
-            foreach (Config::FOLDER_MAP as $id => $imapName) {
-                try {
-                    $imap->selectMailbox($imapName);
-                    $count = count($imap->searchUids(200));
-                } catch (Throwable $e) {
-                    $count = 0;
-                }
-
-                $folders[] = [
-                    'id' => $id,
-                    'label' => ucfirst($id),
-                    'hint' => match ($id) {
-                        'inbox' => 'Priority mail',
-                        'sent' => 'Delivered mail',
-                        'drafts' => 'Saved for later',
-                        'spam' => 'Filtered mail',
-                        'trash' => 'Deleted items',
-                        default => '',
-                    },
-                    'count' => $count,
-                    'icon' => substr($id, 0, 2),
-                ];
+        foreach (Config::FOLDER_MAP as $id => $imapName) {
+            try {
+                $imap->selectMailbox($imapName);
+                $count = count($imap->searchUids(200));
+            } catch (Throwable $e) {
+                $count = 0;
             }
-        } finally {
-            $imap->logout();
+
+            $folders[] = [
+                'id' => $id,
+                'label' => ucfirst($id),
+                'hint' => match ($id) {
+                    'inbox' => 'Priority mail',
+                    'sent' => 'Delivered mail',
+                    'drafts' => 'Saved for later',
+                    'spam' => 'Filtered mail',
+                    'trash' => 'Deleted items',
+                    default => '',
+                },
+                'count' => $count,
+                'icon' => substr($id, 0, 2),
+            ];
         }
 
         return $folders;

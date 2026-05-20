@@ -55,13 +55,19 @@ final class ImapClient
         $this->executeSimple('SELECT ' . $this->quote($folderName));
     }
 
-    public function searchUids(int $limit = 30): array
+    public function searchUids(int $limit = 30, string $query = ''): array
     {
-        $response = $this->execute('UID SEARCH ALL');
+        $command = 'UID SEARCH ALL';
+        if ($query !== '') {
+            $safeQuery = $this->quote($query);
+            $command = "UID SEARCH OR SUBJECT {$safeQuery} FROM {$safeQuery}";
+        }
+
+        $response = $this->execute($command);
         $uids = [];
 
         foreach ($response['untagged'] as $line) {
-            if (preg_match('/^\* SEARCH(.*)$/', trim($line), $matches)) {
+            if (preg_match('/^\* SEARCH(.*)$/i', trim($line), $matches)) {
                 $uids = array_values(array_filter(explode(' ', trim($matches[1]))));
             }
         }
@@ -118,11 +124,15 @@ final class ImapClient
         $blocks = [];
 
         while (($line = $this->readLine()) !== null) {
-            if ($captureBlocks && preg_match('/^\* \d+ FETCH .*?\{(\d+)\}\r\n$/', $line, $matches)) {
-                $literalLength = (int) $matches[1];
-                $literal = $this->readBytes($literalLength);
-                $tail = $this->readLine() ?? '';
-                $blocks[] = $line . $literal . $tail;
+            if ($captureBlocks && preg_match('/^\* \d+ FETCH /i', $line)) {
+                $fullResponse = $line;
+                while (preg_match('/\{(\d+)\}\r\n$/', $fullResponse, $matches)) {
+                    $literalLength = (int) $matches[1];
+                    $fullResponse .= $this->readBytes($literalLength);
+                    $nextPart = $this->readLine() ?? '';
+                    $fullResponse .= $nextPart;
+                }
+                $blocks[] = $fullResponse;
                 continue;
             }
 
@@ -152,28 +162,35 @@ final class ImapClient
             $rawHeader = '';
             $rawBody = '';
 
-            if (preg_match('/UID (\d+)/', $block, $matches)) {
+            if (preg_match('/UID (\d+)/i', $block, $matches)) {
                 $uid = (int) $matches[1];
             }
 
-            if (preg_match('/RFC822\.SIZE (\d+)/', $block, $matches)) {
+            if (preg_match('/RFC822\.SIZE (\d+)/i', $block, $matches)) {
                 $size = (int) $matches[1];
             }
 
-            if (preg_match('/FLAGS \((.*?)\)/', $block, $matches)) {
+            if (preg_match('/FLAGS \((.*?)\)/i', $block, $matches)) {
                 $flags = array_values(array_filter(explode(' ', trim($matches[1]))));
             }
 
-            if (preg_match('/\{(\d+)\}\r\n(.*)\)\r\n$/s', $block, $matches)) {
-                $payload = $matches[2];
-                if (stripos($block, 'BODY.PEEK[HEADER') !== false) {
-                    $parts = preg_split("/\r\n\r\n/", $payload, 2);
-                    $rawHeader = $parts[0] ?? $payload;
-                    $rawBody = $parts[1] ?? '';
+            // Extract literals
+            if (preg_match_all('/BODY\[(.*?)\] \{(\d+)\}\r\n/i', $block, $matches, PREG_OFFSET_CAPTURE)) {
+                foreach ($matches[0] as $index => $match) {
+                    $partName = strtoupper($matches[1][$index][0]);
+                    $length = (int) $matches[2][$index][0];
+                    $start = $match[1] + strlen($match[0]);
+                    $content = substr($block, $start, $length);
+
+                    if (str_contains($partName, 'HEADER')) {
+                        $rawHeader = $content;
+                    } elseif (str_contains($partName, 'TEXT') || $partName === '') {
+                        $rawBody = $content;
+                    }
                 }
             }
 
-            if (!$rawHeader && preg_match('/\r\n(From: .*?)\)\r\n$/s', $block, $matches)) {
+            if (!$rawHeader && preg_match('/\r\n(From: .*?)\)\r\n$/si', $block, $matches)) {
                 $rawHeader = $matches[1];
             }
 
@@ -189,7 +206,7 @@ final class ImapClient
                 'to' => $headers['to'] ?? '',
                 'date' => $headers['date'] ?? '',
                 'messageId' => $headers['message-id'] ?? '',
-                'body' => nl2br(htmlspecialchars(trim($rawBody))),
+                'body' => $rawBody ? nl2br(htmlspecialchars(trim($rawBody))) : null,
             ];
         }
 
