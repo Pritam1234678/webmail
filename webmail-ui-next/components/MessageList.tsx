@@ -2,21 +2,48 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { useMail } from '@/contexts/MailContext'
-import { formatDate, getInitials, getAvatarColor, cn } from '@/lib/utils'
-import { Search, SlidersHorizontal, Star, Paperclip } from 'lucide-react'
+import { formatDate, getInitials, getAvatarColor } from '@/lib/utils'
 import type { Message } from '@/lib/types'
+
+const C = {
+  bg: '#0c0c0e',
+  surface: '#0f0f13',
+  hover: '#161620',
+  active: '#1a1a25',
+  border: '#1e1e28',
+  text: '#f0f0f5',
+  textSub: '#8a8a9a',
+  textMuted: '#4a4a5a',
+  blue: '#4f8ef7',
+  unreadDot: '#4f8ef7',
+}
+
+const AVATAR_GRADIENTS = [
+  'linear-gradient(135deg, #667eea, #764ba2)',
+  'linear-gradient(135deg, #f093fb, #f5576c)',
+  'linear-gradient(135deg, #4facfe, #00f2fe)',
+  'linear-gradient(135deg, #43e97b, #38f9d7)',
+  'linear-gradient(135deg, #fa709a, #fee140)',
+  'linear-gradient(135deg, #a18cd1, #fbc2eb)',
+]
+
+function getGradient(name: string) {
+  let hash = 0
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  return AVATAR_GRADIENTS[Math.abs(hash) % AVATAR_GRADIENTS.length]
+}
 
 function SkeletonItem() {
   return (
-    <div className="px-4 py-3.5 flex gap-3 animate-pulse">
-      <div className="w-9 h-9 rounded-full bg-bg-elevated flex-shrink-0" />
-      <div className="flex-1 space-y-2 min-w-0">
-        <div className="flex justify-between">
-          <div className="h-3 bg-bg-elevated rounded w-24" />
-          <div className="h-3 bg-bg-elevated rounded w-12" />
+    <div style={{ padding: '14px 16px', display: 'flex', gap: 12, borderBottom: `1px solid #1e1e28` }}>
+      <div style={{ width: 38, height: 38, borderRadius: '50%', background: '#1c1c25', flexShrink: 0 }} />
+      <div style={{ flex: 1 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+          <div style={{ height: 11, background: '#1c1c25', borderRadius: 6, width: 90 }} />
+          <div style={{ height: 11, background: '#1c1c25', borderRadius: 6, width: 45 }} />
         </div>
-        <div className="h-3 bg-bg-elevated rounded w-4/5" />
-        <div className="h-2.5 bg-bg-elevated rounded w-3/5" />
+        <div style={{ height: 11, background: '#1c1c25', borderRadius: 6, width: '80%', marginBottom: 6 }} />
+        <div style={{ height: 10, background: '#1c1c25', borderRadius: 6, width: '55%' }} />
       </div>
     </div>
   )
@@ -24,63 +51,77 @@ function SkeletonItem() {
 
 function MessageItem({ message, isSelected }: { message: Message; isSelected: boolean }) {
   const { setSelectedMessage } = useMail()
-  const initials = getInitials(message.senderName || message.senderEmail)
-  const avatarColor = getAvatarColor(message.senderName || message.senderEmail)
+  const senderName = message.senderName || message.senderEmail || 'Unknown'
+  const initials = getInitials(senderName)
+  const gradient = getGradient(senderName)
 
   return (
     <motion.button
       layout
-      initial={{ opacity: 0, y: 4 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -4 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
       onClick={() => setSelectedMessage(message)}
-      className={cn(
-        "w-full text-left px-4 py-3.5 flex gap-3 border-b border-border-subtle transition-all duration-150 group relative",
-        isSelected ? "bg-bg-active" : "hover:bg-bg-hover"
-      )}
+      style={{
+        width: '100%', textAlign: 'left', padding: '13px 16px',
+        display: 'flex', gap: 12, alignItems: 'flex-start',
+        background: isSelected ? C.active : 'transparent',
+        border: 'none', borderBottom: `1px solid ${C.border}`,
+        cursor: 'pointer', position: 'relative', fontFamily: 'inherit',
+        transition: 'background 0.12s ease',
+      }}
+      onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = C.hover }}
+      onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLElement).style.background = 'transparent' }}
     >
-      {/* Unread indicator */}
+      {/* Unread dot */}
       {message.unread && !isSelected && (
-        <div className="absolute left-1.5 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-accent-blue" />
+        <div style={{
+          position: 'absolute', left: 5, top: '50%', transform: 'translateY(-50%)',
+          width: 5, height: 5, borderRadius: '50%', background: C.blue,
+        }} />
       )}
 
       {/* Avatar */}
-      <div className={cn(
-        "w-9 h-9 rounded-full flex items-center justify-center text-[12px] font-semibold text-white flex-shrink-0 bg-gradient-to-br",
-        avatarColor
-      )}>
+      <div style={{
+        width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
+        background: gradient,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 13, fontWeight: 700, color: '#fff',
+        marginLeft: message.unread ? 4 : 0,
+      }}>
         {initials}
       </div>
 
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between gap-2 mb-0.5">
-          <span className={cn(
-            "text-[13px] truncate",
-            message.unread ? "font-semibold text-text-primary" : "font-medium text-text-secondary"
-          )}>
-            {message.senderName || message.senderEmail}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {/* Row 1 */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3 }}>
+          <span style={{
+            fontSize: 13, fontWeight: message.unread ? 650 : 500,
+            color: message.unread ? C.text : C.textSub,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 140,
+          }}>
+            {senderName}
           </span>
-          <span className="text-[11px] text-text-muted flex-shrink-0 mono">
+          <span style={{ fontSize: 11, color: C.textMuted, fontVariantNumeric: 'tabular-nums', flexShrink: 0, marginLeft: 6 }}>
             {formatDate(message.timestamp)}
           </span>
         </div>
-        <p className={cn(
-          "text-[12px] truncate mb-0.5",
-          message.unread ? "text-text-primary font-medium" : "text-text-secondary"
-        )}>
+
+        {/* Row 2 - Subject */}
+        <p style={{
+          fontSize: 12.5, fontWeight: message.unread ? 600 : 400,
+          color: message.unread ? '#d0d0e0' : C.textSub,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0, marginBottom: 2,
+        }}>
           {message.subject || '(No subject)'}
         </p>
-        <div className="flex items-center gap-1.5">
-          <p className="text-[11.5px] text-text-muted truncate flex-1">
-            {message.snippet || 'No preview available'}
-          </p>
-          {message.attachments?.length > 0 && (
-            <Paperclip className="w-3 h-3 text-text-muted flex-shrink-0" />
-          )}
-          {message.starred && (
-            <Star className="w-3 h-3 text-accent-amber fill-accent-amber flex-shrink-0" />
-          )}
-        </div>
+
+        {/* Row 3 - Snippet */}
+        <p style={{
+          fontSize: 11.5, color: C.textMuted, margin: 0,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>
+          {message.snippet || 'No preview available'}
+        </p>
       </div>
     </motion.button>
   )
@@ -90,58 +131,67 @@ export default function MessageList() {
   const { messages, selectedMessage, loading, selectedFolder, searchQuery, setSearchQuery, refreshMessages } = useMail()
 
   const folderLabel: Record<string, string> = {
-    inbox: 'Inbox', sent: 'Sent', drafts: 'Drafts', spam: 'Spam', trash: 'Trash'
+    inbox: 'Inbox', sent: 'Sent', drafts: 'Drafts', spam: 'Spam', trash: 'Trash',
   }
 
   return (
-    <div className="w-[320px] flex-shrink-0 flex flex-col h-full border-r border-border-subtle bg-bg-primary">
+    <div style={{
+      width: 300, flexShrink: 0, display: 'flex', flexDirection: 'column',
+      height: '100%', background: C.surface, borderRight: `1px solid ${C.border}`,
+    }}>
       {/* Header */}
-      <div className="px-4 pt-5 pb-3 border-b border-border-subtle">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-[17px] font-semibold text-text-primary tracking-tight">
+      <div style={{ padding: '20px 16px 12px', borderBottom: `1px solid ${C.border}` }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <h2 style={{ fontSize: 17, fontWeight: 700, color: C.text, margin: 0, letterSpacing: '-0.3px' }}>
             {folderLabel[selectedFolder] || selectedFolder}
           </h2>
-          <span className="text-[11px] text-text-muted mono">{messages.length} messages</span>
+          <span style={{ fontSize: 11, color: C.textMuted }}>
+            {messages.length}
+          </span>
         </div>
 
         {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted" />
+        <div style={{ position: 'relative' }}>
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#4a4a5a" strokeWidth={2.5}
+            style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)' }}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
           <input
             type="text"
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && refreshMessages()}
-            placeholder="Search messages..."
-            className="w-full pl-8 pr-3 py-2 bg-bg-elevated border border-border-subtle rounded-lg text-[12.5px] text-text-primary placeholder:text-text-muted outline-none focus:border-border-default transition-colors duration-150"
+            placeholder="Search..."
+            style={{
+              width: '100%', padding: '8px 12px 8px 30px',
+              background: '#1a1a22', border: '1px solid #252530',
+              borderRadius: 9, color: C.text, fontSize: 12.5, fontFamily: 'inherit',
+              outline: 'none', transition: 'border-color 0.15s',
+            }}
+            onFocus={e => (e.target as HTMLElement).style.borderColor = '#4f8ef7'}
+            onBlur={e => (e.target as HTMLElement).style.borderColor = '#252530'}
           />
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto">
+      {/* List */}
+      <div style={{ flex: 1, overflowY: 'auto' }}>
         {loading ? (
-          Array.from({ length: 8 }).map((_, i) => <SkeletonItem key={i} />)
+          Array.from({ length: 7 }).map((_, i) => <SkeletonItem key={i} />)
         ) : messages.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex flex-col items-center justify-center h-full gap-3 px-8 text-center"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-bg-elevated flex items-center justify-center mb-1">
-              <Search className="w-5 h-5 text-text-muted" />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 32, textAlign: 'center' }}>
+            <div style={{ width: 48, height: 48, borderRadius: 14, background: '#1c1c25', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+              <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#4a4a5a" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
             </div>
-            <p className="text-[13px] text-text-secondary font-medium">No messages found</p>
-            <p className="text-[12px] text-text-muted">This folder appears to be empty</p>
-          </motion.div>
+            <p style={{ fontSize: 13, color: C.textSub, fontWeight: 500, margin: 0, marginBottom: 6 }}>No messages</p>
+            <p style={{ fontSize: 12, color: C.textMuted, margin: 0 }}>This folder is empty</p>
+          </div>
         ) : (
           <AnimatePresence initial={false}>
             {messages.map(msg => (
-              <MessageItem
-                key={msg.id}
-                message={msg}
-                isSelected={selectedMessage?.id === msg.id}
-              />
+              <MessageItem key={msg.id} message={msg} isSelected={selectedMessage?.id === msg.id} />
             ))}
           </AnimatePresence>
         )}

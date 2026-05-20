@@ -3,22 +3,25 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useMail } from '@/contexts/MailContext'
-import { Search, X, Command } from 'lucide-react'
-import { formatDate, getInitials, getAvatarColor, cn } from '@/lib/utils'
+
+const T = {
+  bg: '#0e0e0e', onSurface: '#e5e2e1', onSurfaceVar: '#c4c7c7',
+  gold: '#e9c349', outline: 'rgba(68,71,72,0.5)', surfaceHigh: '#2a2a2a',
+  surfaceMid: '#20201f', surfaceLow: '#1c1b1b',
+}
+
+const getInitials = (name: string) => name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
 
 export default function CommandPalette() {
-  const { messages, setSelectedMessage, setSelectedFolder } = useMail()
+  const { messages, setSelectedMessage, setSelectedFolder, composeOpen, setComposeOpen } = useMail()
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
+  const [filter, setFilter] = useState<'all' | 'contacts' | 'attachments'>('all')
 
-  // Listen for Cmd+K / Ctrl+K
   if (typeof window !== 'undefined') {
     document.onkeydown = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault()
-        setOpen(prev => !prev)
-      }
-      if (e.key === 'Escape') setOpen(false)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); setOpen(o => !o) }
+      if (e.key === 'Escape') { setOpen(false); setQuery('') }
     }
   }
 
@@ -26,17 +29,17 @@ export default function CommandPalette() {
     ? messages.filter(m =>
       m.subject?.toLowerCase().includes(query.toLowerCase()) ||
       m.senderName?.toLowerCase().includes(query.toLowerCase()) ||
-      m.senderEmail?.toLowerCase().includes(query.toLowerCase())
+      m.senderEmail?.toLowerCase().includes(query.toLowerCase()) ||
+      m.snippet?.toLowerCase().includes(query.toLowerCase())
     ).slice(0, 6)
-    : []
+    : messages.slice(0, 4)
 
-  const folderActions = [
-    { label: 'Go to Inbox', folder: 'inbox' },
-    { label: 'Go to Sent', folder: 'sent' },
-    { label: 'Go to Drafts', folder: 'drafts' },
-    { label: 'Go to Spam', folder: 'spam' },
-    { label: 'Go to Trash', folder: 'trash' },
-  ].filter(a => !query || a.label.toLowerCase().includes(query.toLowerCase()))
+  const suggested = ['"Contract"', '"Drafts"', '"Studio"']
+  const filters = [
+    { id: 'all', label: 'All Mailboxes', count: 1 },
+    { id: 'contacts', label: 'Contacts', count: 2 },
+    { id: 'attachments', label: 'Attachments', count: 3 },
+  ]
 
   return (
     <AnimatePresence>
@@ -47,117 +50,184 @@ export default function CommandPalette() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setOpen(false)}
-            className="fixed inset-0 bg-black/60 z-50 backdrop-blur-sm"
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 200, backdropFilter: 'blur(4px)' }}
           />
-          <div className="fixed inset-0 z-50 flex items-start justify-center pt-[20vh] px-4 pointer-events-none">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: -16 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: -16 }}
-              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-[580px] bg-bg-elevated border border-border-default rounded-2xl overflow-hidden pointer-events-auto"
-              style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.04) inset, 0 24px 80px rgba(0,0,0,0.8)' }}
-            >
-              {/* Search input */}
-              <div className="flex items-center gap-3 px-4 py-3.5 border-b border-border-subtle">
-                <Search className="w-4 h-4 text-text-muted flex-shrink-0" />
-                <input
-                  autoFocus
-                  type="text"
-                  value={query}
-                  onChange={e => setQuery(e.target.value)}
-                  placeholder="Search messages or type a command..."
-                  className="flex-1 text-[14px] text-text-primary placeholder:text-text-muted bg-transparent outline-none"
-                />
-                <button onClick={() => setOpen(false)}>
-                  <X className="w-4 h-4 text-text-muted hover:text-text-secondary transition-colors" />
-                </button>
+
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3, ease: [0.2, 0, 0, 1] }}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 201,
+              display: 'flex', flexDirection: 'column',
+              background: T.bg,
+              fontFamily: 'Hanken Grotesk, sans-serif',
+            }}
+          >
+            {/* Search header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '20px 32px', borderBottom: `1px solid ${T.outline}` }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 22, color: T.onSurfaceVar }}>search</span>
+              <input
+                autoFocus
+                type="text"
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+                placeholder="Search emails, contacts, or commands..."
+                style={{
+                  flex: 1, background: 'none', border: 'none', outline: 'none',
+                  fontFamily: 'Playfair Display, Georgia, serif',
+                  fontSize: 32, fontWeight: 600, color: query ? T.onSurface : T.onSurfaceVar,
+                  letterSpacing: '-0.01em',
+                }}
+              />
+              <button
+                onClick={() => setOpen(false)}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: `1px solid ${T.outline}`, borderRadius: 2, padding: '6px 12px', cursor: 'pointer', color: T.onSurfaceVar, fontFamily: 'Hanken Grotesk', fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}
+              >
+                <span style={{ fontFamily: 'monospace', fontSize: 10, background: T.surfaceHigh, padding: '2px 4px', borderRadius: 2 }}>ESC</span>
+                Close
+              </button>
+            </div>
+
+            <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+              {/* Left panel — Filters */}
+              <div style={{ width: 260, borderRight: `1px solid ${T.outline}`, padding: '28px 20px', flexShrink: 0 }}>
+                <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: T.onSurfaceVar, marginBottom: 12 }}>Search In</p>
+                {filters.map(f => (
+                  <button
+                    key={f.id}
+                    onClick={() => setFilter(f.id as any)}
+                    style={{
+                      width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '10px 12px', borderRadius: 2, marginBottom: 4,
+                      background: filter === f.id ? T.surfaceMid : 'none',
+                      border: filter === f.id ? `1px solid rgba(233,195,73,0.25)` : `1px solid transparent`,
+                      cursor: 'pointer', color: filter === f.id ? T.onSurface : T.onSurfaceVar,
+                      fontFamily: 'Hanken Grotesk', fontSize: 13, transition: 'all 0.15s',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: 16, color: filter === f.id ? T.gold : 'inherit' }}>
+                        {f.id === 'all' ? 'inbox' : f.id === 'contacts' ? 'person' : 'attach_file'}
+                      </span>
+                      {f.label}
+                    </div>
+                    <span style={{ fontSize: 11, color: T.onSurfaceVar, border: `1px solid ${T.outline}`, borderRadius: 2, padding: '1px 6px' }}>{f.count}</span>
+                  </button>
+                ))}
+
+                <div style={{ height: 1, background: T.outline, margin: '20px 0' }} />
+
+                <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: T.onSurfaceVar, marginBottom: 12 }}>Filters</p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {['Has Attachment', 'Unread', 'From VIPs', 'Last 7 Days'].map(tag => (
+                    <button key={tag} style={{
+                      padding: '5px 10px', borderRadius: 2, fontFamily: 'Hanken Grotesk', fontSize: 11, fontWeight: 600,
+                      border: tag === 'Unread' ? `1px solid ${T.gold}` : `1px solid ${T.outline}`,
+                      background: tag === 'Unread' ? 'rgba(233,195,73,0.12)' : 'none',
+                      color: tag === 'Unread' ? T.gold : T.onSurfaceVar, cursor: 'pointer',
+                    }}>{tag}</button>
+                  ))}
+                </div>
               </div>
 
-              {/* Results */}
-              <div className="max-h-[340px] overflow-y-auto py-2">
-                {/* Folder actions */}
-                {folderActions.length > 0 && (
-                  <div>
-                    <div className="px-4 py-2">
-                      <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">Navigation</span>
+              {/* Right panel — Results */}
+              <div style={{ flex: 1, padding: '28px 32px', overflowY: 'auto' }}>
+                {!query && (
+                  <div style={{ marginBottom: 28 }}>
+                    <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: T.onSurfaceVar, marginBottom: 14 }}>Suggested Queries</p>
+                    <div style={{ display: 'flex', gap: 12 }}>
+                      {suggested.map(s => (
+                        <button key={s} onClick={() => setQuery(s.replace(/"/g, ''))}
+                          style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: T.onSurfaceVar, fontFamily: 'Hanken Grotesk', fontSize: 13 }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: 14 }}>schedule</span>
+                          {s}
+                        </button>
+                      ))}
                     </div>
-                    {folderActions.map(action => (
-                      <button
-                        key={action.folder}
-                        onClick={() => { setSelectedFolder(action.folder); setOpen(false); setQuery('') }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-bg-hover transition-colors text-left"
+                  </div>
+                )}
+
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: T.onSurfaceVar }}>
+                      {query ? 'Results' : 'Recent Results'}
+                    </p>
+                    <p style={{ fontSize: 11, color: T.onSurfaceVar, opacity: 0.6 }}>
+                      Use ↑↓ to navigate, ↵ to select
+                    </p>
+                  </div>
+
+                  {filtered.map((msg, i) => {
+                    const senderName = msg.senderName || msg.senderEmail || 'Unknown'
+                    const highlighted = (text: string) => {
+                      if (!query) return <>{text}</>
+                      const idx = text.toLowerCase().indexOf(query.toLowerCase())
+                      if (idx === -1) return <>{text}</>
+                      return <>{text.slice(0, idx)}<span style={{ color: T.gold }}>{text.slice(idx, idx + query.length)}</span>{text.slice(idx + query.length)}</>
+                    }
+                    return (
+                      <motion.button
+                        key={msg.id}
+                        initial={{ opacity: 0, y: 4 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.04 }}
+                        onClick={() => { setSelectedMessage(msg); setOpen(false); setQuery('') }}
+                        style={{
+                          width: '100%', textAlign: 'left', padding: '20px 20px',
+                          background: i === 0 ? T.surfaceMid : 'none',
+                          border: 'none', borderBottom: `1px solid rgba(68,71,72,0.2)`,
+                          borderLeft: i === 0 ? `3px solid ${T.gold}` : '3px solid transparent',
+                          cursor: 'pointer', display: 'flex', gap: 16, fontFamily: 'inherit',
+                          marginBottom: 4, borderRadius: 2,
+                          transition: 'all 0.15s',
+                        }}
                       >
-                        <div className="w-7 h-7 rounded-lg bg-bg-tertiary border border-border-subtle flex items-center justify-center flex-shrink-0">
-                          <Command className="w-3.5 h-3.5 text-text-tertiary" />
+                        <div style={{ width: 40, height: 40, borderRadius: 2, background: T.surfaceHigh, border: `1px solid ${T.outline}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: 16, color: T.onSurfaceVar }}>description</span>
                         </div>
-                        <span className="text-[13px] text-text-primary">{action.label}</span>
-                      </button>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                            <span style={{ fontFamily: 'Hanken Grotesk', fontSize: 15, fontWeight: 500, color: T.onSurface }}>
+                              {highlighted(msg.subject || '(No subject)')}
+                            </span>
+                            <span style={{ fontFamily: 'Hanken Grotesk', fontSize: 11, color: T.onSurfaceVar, opacity: 0.6, flexShrink: 0 }}>
+                              {i === 0 ? '2 hrs ago' : i === 1 ? 'Yesterday' : ''}
+                            </span>
+                          </div>
+                          <p style={{ fontFamily: 'Hanken Grotesk', fontSize: 12, color: T.onSurfaceVar, margin: '0 0 6px' }}>
+                            From: {highlighted(senderName)} &lt;{highlighted(msg.senderEmail || '')}&gt;
+                          </p>
+                          <p style={{ fontFamily: 'Hanken Grotesk', fontSize: 13, color: T.onSurfaceVar, opacity: 0.7, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {msg.snippet || ''}
+                          </p>
+                        </div>
+                      </motion.button>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer shortcuts */}
+            <div style={{ padding: '14px 32px', borderTop: `1px solid ${T.outline}`, display: 'flex', gap: 24, justifyContent: 'center' }}>
+              {[
+                { keys: ['↑', '↓'], label: 'Navigate' },
+                { keys: ['↵'], label: 'Select' },
+                { keys: ['⌘', 'K'], label: 'Commands' },
+              ].map(item => (
+                <div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ display: 'flex', gap: 3 }}>
+                    {item.keys.map(k => (
+                      <kbd key={k} style={{ fontFamily: 'monospace', fontSize: 11, background: T.surfaceHigh, border: `1px solid ${T.outline}`, borderRadius: 2, padding: '2px 6px', color: T.onSurfaceVar }}>{k}</kbd>
                     ))}
                   </div>
-                )}
-
-                {/* Message results */}
-                {filtered.length > 0 && (
-                  <div>
-                    <div className="px-4 py-2 mt-1">
-                      <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">Messages</span>
-                    </div>
-                    {filtered.map(msg => {
-                      const initials = getInitials(msg.senderName || msg.senderEmail)
-                      const color = getAvatarColor(msg.senderName || msg.senderEmail)
-                      return (
-                        <button
-                          key={msg.id}
-                          onClick={() => { setSelectedMessage(msg); setOpen(false); setQuery('') }}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-bg-hover transition-colors text-left"
-                        >
-                          <div className={cn("w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white flex-shrink-0 bg-gradient-to-br", color)}>
-                            {initials}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[13px] text-text-primary truncate">{msg.subject || '(No subject)'}</p>
-                            <p className="text-[11px] text-text-muted truncate">{msg.senderName || msg.senderEmail}</p>
-                          </div>
-                          <span className="text-[11px] text-text-muted mono flex-shrink-0">{formatDate(msg.timestamp)}</span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
-
-                {/* Empty state */}
-                {query && filtered.length === 0 && folderActions.length === 0 && (
-                  <div className="px-4 py-8 text-center">
-                    <p className="text-[13px] text-text-muted">No results for &ldquo;{query}&rdquo;</p>
-                  </div>
-                )}
-
-                {/* Empty query hint */}
-                {!query && (
-                  <div className="px-4 py-4 text-center">
-                    <p className="text-[12px] text-text-muted">Start typing to search messages or navigate</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Footer hints */}
-              <div className="px-4 py-2.5 border-t border-border-subtle flex items-center gap-4">
-                <span className="text-[11px] text-text-muted flex items-center gap-1.5">
-                  <kbd className="px-1.5 py-0.5 bg-bg-tertiary border border-border-subtle rounded text-[10px] mono">↑↓</kbd>
-                  navigate
-                </span>
-                <span className="text-[11px] text-text-muted flex items-center gap-1.5">
-                  <kbd className="px-1.5 py-0.5 bg-bg-tertiary border border-border-subtle rounded text-[10px] mono">↵</kbd>
-                  select
-                </span>
-                <span className="text-[11px] text-text-muted flex items-center gap-1.5">
-                  <kbd className="px-1.5 py-0.5 bg-bg-tertiary border border-border-subtle rounded text-[10px] mono">esc</kbd>
-                  close
-                </span>
-              </div>
-            </motion.div>
-          </div>
+                  <span style={{ fontFamily: 'Hanken Grotesk', fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: T.onSurfaceVar, opacity: 0.6 }}>{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
         </>
       )}
     </AnimatePresence>

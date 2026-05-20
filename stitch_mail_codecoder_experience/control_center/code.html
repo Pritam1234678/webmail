@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Settings - MAIL CODECODER</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600&amp;family=Playfair+Display:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed-variant": "#574500",
+                    "secondary-fixed": "#ffe088",
+                    "inverse-surface": "#e5e2e1",
+                    "secondary-fixed-dim": "#e9c349",
+                    "outline": "#8e9192",
+                    "on-primary-fixed": "#1c1b1b",
+                    "on-error-container": "#ffdad6",
+                    "surface": "#131313",
+                    "tertiary-container": "#111312",
+                    "on-background": "#e5e2e1",
+                    "outline-variant": "#444748",
+                    "primary-fixed": "#e5e2e1",
+                    "surface-container-low": "#1c1b1b",
+                    "surface-container-highest": "#353535",
+                    "surface-container": "#20201f",
+                    "on-secondary-container": "#342800",
+                    "secondary": "#e9c349",
+                    "primary-fixed-dim": "#c8c6c5",
+                    "surface-container-high": "#2a2a2a",
+                    "error-container": "#93000a",
+                    "inverse-on-surface": "#313030",
+                    "on-surface-variant": "#c4c7c7",
+                    "primary": "#c8c6c5",
+                    "on-secondary-fixed": "#241a00",
+                    "on-primary": "#313030",
+                    "on-surface": "#e5e2e1",
+                    "tertiary": "#c6c7c4",
+                    "surface-dim": "#131313",
+                    "error": "#ffb4ab",
+                    "on-tertiary": "#2f312f",
+                    "on-tertiary-fixed": "#1a1c1a",
+                    "surface-variant": "#353535",
+                    "on-error": "#690005",
+                    "secondary-container": "#af8d11",
+                    "on-secondary": "#3c2f00",
+                    "on-primary-container": "#7e7d7d",
+                    "surface-tint": "#c8c6c5",
+                    "surface-container-lowest": "#0e0e0e",
+                    "on-tertiary-container": "#7d7e7c",
+                    "background": "#131313",
+                    "surface-bright": "#393939",
+                    "on-primary-fixed-variant": "#474646",
+                    "inverse-primary": "#5f5e5e",
+                    "tertiary-fixed": "#e2e3e0",
+                    "on-tertiary-fixed-variant": "#454745",
+                    "primary-container": "#121212",
+                    "tertiary-fixed-dim": "#c6c7c4"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "unit": "8px",
+                    "desktop-max-width": "1440px",
+                    "margin-safe": "40px",
+                    "gutter": "24px"
+            },
+            "fontFamily": {
+                    "body-md": [
+                            "Hanken Grotesk"
+                    ],
+                    "label-caps": [
+                            "Hanken Grotesk"
+                    ],
+                    "headline-lg": [
+                            "Playfair Display"
+                    ],
+                    "headline-lg-mobile": [
+                            "Playfair Display"
+                    ],
+                    "hero-display": [
+                            "Playfair Display"
+                    ],
+                    "headline-md": [
+                            "Playfair Display"
+                    ],
+                    "body-lg": [
+                            "Hanken Grotesk"
+                    ]
+            },
+            "fontSize": {
+                    "body-md": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "letterSpacing": "0.01em",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "label-caps": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "letterSpacing": "0.12em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "headline-lg": [
+                            "40px",
+                            {
+                                    "lineHeight": "48px",
+                                    "letterSpacing": "-0.01em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "headline-lg-mobile": [
+                            "32px",
+                            {
+                                    "lineHeight": "40px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "hero-display": [
+                            "72px",
+                            {
+                                    "lineHeight": "80px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "headline-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "body-lg": [
+                            "18px",
+                            {
+                                    "lineHeight": "28px",
+                                    "letterSpacing": "0.01em",
+                                    "fontWeight": "400"
+                            }
+                    ]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .bezier-physical { transition-timing-function: cubic-bezier(0.2, 0.0, 0.0, 1.0); }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md min-h-screen flex flex-col md:flex-row antialiased selection:bg-secondary selection:text-on-secondary">
+<!-- Mobile Top App Bar (Only visible on mobile as SideNavBar takes over on desktop) -->
+<header class="md:hidden docked full-width top-0 z-40 bg-surface/95 dark:bg-surface/95 backdrop-blur-3xl border-b border-outline-variant/10 sticky">
+<div class="flex justify-between items-center px-margin-safe h-24 max-w-desktop-max-width mx-auto">
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile tracking-widest text-on-surface text-primary dark:text-primary uppercase">MAIL CODECODER</h1>
+<div class="flex gap-4">
+<span class="material-symbols-outlined text-on-surface-variant hover:text-on-surface hover:opacity-80 transition-opacity duration-500 cursor-pointer">account_circle</span>
+<span class="material-symbols-outlined text-on-surface-variant hover:text-on-surface hover:opacity-80 transition-opacity duration-500 cursor-pointer">notifications</span>
+</div>
+</div>
+</header>
+<!-- SideNavBar (Desktop) -->
+<nav class="hidden md:flex flex-col h-full w-[280px] fixed left-0 top-0 py-margin-safe border-r border-outline-variant/10 bg-surface-container-lowest dark:bg-surface-container-lowest bg-gradient-to-b from-surface-container-lowest to-surface-dim shadow-[40px_0_60px_-15px_rgba(0,0,0,0.9)] z-50">
+<div class="px-gutter mb-12">
+<h1 class="font-headline-md text-headline-md tracking-tighter text-on-surface uppercase text-primary dark:text-primary">MAIL CODECODER</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant mt-2 opacity-60">Elite Communication</p>
+</div>
+<div class="px-gutter mb-8">
+<button class="w-full bg-surface-container-high text-on-surface border border-outline-variant/20 py-3 flex items-center justify-center gap-2 font-label-caps text-label-caps hover:bg-surface-container-highest transition-colors duration-300 bezier-physical hover:border-secondary/30 group">
+<span class="material-symbols-outlined text-primary group-hover:text-secondary transition-colors duration-300">edit_square</span>
+                Compose
+            </button>
+</div>
+<ul class="flex-1 flex flex-col gap-1 px-4">
+<li><a class="flex items-center gap-4 text-on-surface-variant font-medium opacity-60 hover:opacity-100 pl-4 transition-all duration-300 font-label-caps text-label-caps py-3 hover:bg-surface-container-high rounded-sm hover:scale-[0.99] bezier-physical" href="#"><span class="material-symbols-outlined">inbox</span> Inbox</a></li>
+<li><a class="flex items-center gap-4 text-on-surface-variant font-medium opacity-60 hover:opacity-100 pl-4 transition-all duration-300 font-label-caps text-label-caps py-3 hover:bg-surface-container-high rounded-sm hover:scale-[0.99] bezier-physical" href="#"><span class="material-symbols-outlined">star</span> Starred</a></li>
+<li><a class="flex items-center gap-4 text-on-surface-variant font-medium opacity-60 hover:opacity-100 pl-4 transition-all duration-300 font-label-caps text-label-caps py-3 hover:bg-surface-container-high rounded-sm hover:scale-[0.99] bezier-physical" href="#"><span class="material-symbols-outlined">send</span> Sent</a></li>
+<li><a class="flex items-center gap-4 text-on-surface-variant font-medium opacity-60 hover:opacity-100 pl-4 transition-all duration-300 font-label-caps text-label-caps py-3 hover:bg-surface-container-high rounded-sm hover:scale-[0.99] bezier-physical" href="#"><span class="material-symbols-outlined">draft</span> Drafts</a></li>
+<li><a class="flex items-center gap-4 text-on-surface-variant font-medium opacity-60 hover:opacity-100 pl-4 transition-all duration-300 font-label-caps text-label-caps py-3 hover:bg-surface-container-high rounded-sm hover:scale-[0.99] bezier-physical" href="#"><span class="material-symbols-outlined">archive</span> Archive</a></li>
+</ul>
+<ul class="flex flex-col gap-1 px-4 mt-auto pt-8 border-t border-outline-variant/10">
+<!-- Active Settings Tab -->
+<li><a class="flex items-center gap-4 text-secondary font-bold border-l-2 border-secondary pl-4 transition-all duration-500 font-label-caps text-label-caps py-3 scale-[0.99] bezier-physical bg-surface-container-high rounded-r-sm" href="#"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">settings</span> Settings</a></li>
+<li><a class="flex items-center gap-4 text-on-surface-variant font-medium opacity-60 hover:opacity-100 pl-4 transition-all duration-300 font-label-caps text-label-caps py-3 hover:bg-surface-container-high rounded-sm hover:scale-[0.99] bezier-physical" href="#"><span class="material-symbols-outlined">help</span> Support</a></li>
+</ul>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-[280px] flex flex-col min-h-screen relative overflow-hidden">
+<!-- Atmospheric Background Gradient -->
+<div class="absolute inset-0 pointer-events-none bg-gradient-to-b from-surface-container-lowest via-background to-background opacity-80 z-0"></div>
+<div class="flex-1 w-full max-w-desktop-max-width mx-auto px-gutter md:px-[64px] py-12 md:py-24 relative z-10 flex flex-col gap-12">
+<!-- Page Header -->
+<header class="flex flex-col gap-4 max-w-2xl">
+<h2 class="font-hero-display text-hero-display text-on-surface tracking-tighter">Control Center</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant opacity-80">Configure your elite communication environment. Precision settings for uncompromising focus and security.</p>
+</header>
+<!-- Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-8">
+<!-- Profile Section (Bento Large Card) -->
+<section class="md:col-span-8 bg-surface-container dark:bg-surface border border-outline-variant/10 rounded-xl p-8 shadow-[0_40px_60px_-15px_rgba(0,0,0,0.8)] relative group overflow-hidden transition-all duration-500 hover:bg-surface-container-high">
+<div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-outline-variant/20 to-transparent"></div>
+<div class="flex flex-col md:flex-row gap-8 items-start">
+<div class="flex-shrink-0 relative">
+<div class="w-32 h-32 rounded-full overflow-hidden border border-outline-variant/20">
+<img alt="Profile Avatar" class="w-full h-full object-cover filter grayscale contrast-125" data-alt="A highly professional, black-and-white portrait of an executive in a dimly lit, minimalist studio setting. The lighting is cinematic and dramatic, casting a soft glow on the subject's face while deep shadows define the background. The mood is composed, authoritative, and sophisticated, perfectly matching a high-end, luxury tech aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBLWQZRN5DbjnsWun81glUNyeSFfUcY5vz3SuAWl9zU7rUSxB49lmQRnptIJsPJ3es6W725DGfOR86gR0-zFJlUOo3nfKpBYqtKH6uzhOo4-FWfjxW4_yONv4Y0WUxVqvtfNUWk4IGpX-tRBs5pBGq-9EdGbPpzluY8PdEC-KObAwhcsWSgtxjdVV8kADmyCk-sIgJYWV7x2s4xJo23fEpOHj0e5NNemKVmF7zpr9E3gVM1ydKwdSFN77_bnjEp6vcaZxeKzizLM6Gs"/>
+</div>
+<button class="absolute bottom-0 right-0 w-8 h-8 bg-surface-container-highest border border-outline-variant/30 rounded-full flex items-center justify-center text-on-surface hover:text-secondary transition-colors cursor-pointer shadow-lg">
+<span class="material-symbols-outlined text-[16px]">add_a_photo</span>
+</button>
+</div>
+<div class="flex-1 w-full flex flex-col gap-6">
+<div>
+<h3 class="font-headline-md text-headline-md mb-1">Director Protocol</h3>
+<p class="font-label-caps text-label-caps text-on-surface-variant">director@mailcodecoder.com</p>
+</div>
+<div class="flex flex-col gap-4">
+<div class="flex flex-col gap-2">
+<label class="font-label-caps text-label-caps text-on-surface-variant ml-1">Signature Designer</label>
+<textarea class="w-full bg-surface-container-lowest border-0 border-b border-outline-variant/30 focus:border-tertiary focus:ring-0 px-4 py-3 font-body-md text-body-md text-on-surface resize-none h-24 transition-colors placeholder:text-on-surface-variant/30" placeholder="Type your signature...">Director of Operations
+MAIL CODECODER | The Art of Precision
+PGP: 0x8F92A1</textarea>
+</div>
+<button class="self-end px-6 py-2 bg-surface-container-lowest border border-outline-variant/20 text-on-surface font-label-caps text-label-caps hover:border-tertiary hover:text-tertiary transition-all duration-300">Update Profile</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Encryption Settings (Bento Small Card) -->
+<section class="md:col-span-4 bg-surface-container dark:bg-surface border border-outline-variant/10 rounded-xl p-8 shadow-[0_40px_60px_-15px_rgba(0,0,0,0.8)] flex flex-col gap-8 transition-all duration-500 hover:bg-surface-container-high">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary text-[28px]">enhanced_encryption</span>
+<h3 class="font-headline-md text-headline-md">Security</h3>
+</div>
+<div class="flex flex-col gap-6 flex-1">
+<div class="flex items-center justify-between group cursor-pointer">
+<div>
+<h4 class="font-body-md text-body-md text-on-surface group-hover:text-secondary transition-colors">Quantum Encryption</h4>
+<p class="font-label-caps text-label-caps text-on-surface-variant mt-1">Post-quantum key exchange</p>
+</div>
+<!-- Custom Toggle -->
+<div class="relative w-12 h-6 bg-secondary/20 rounded-full border border-secondary/30 transition-colors">
+<div class="absolute right-1 top-1 w-4 h-4 bg-secondary rounded-full shadow-md"></div>
+</div>
+</div>
+<div class="w-full h-[1px] bg-outline-variant/10"></div>
+<div class="flex items-center justify-between group cursor-pointer">
+<div>
+<h4 class="font-body-md text-body-md text-on-surface group-hover:text-secondary transition-colors">Zero-Knowledge</h4>
+<p class="font-label-caps text-label-caps text-on-surface-variant mt-1">Local key storage only</p>
+</div>
+<!-- Custom Toggle (Off state) -->
+<div class="relative w-12 h-6 bg-surface-container-highest rounded-full border border-outline-variant/20 transition-colors">
+<div class="absolute left-1 top-1 w-4 h-4 bg-on-surface-variant rounded-full shadow-md"></div>
+</div>
+</div>
+</div>
+<button class="w-full py-3 border border-error/30 text-error font-label-caps text-label-caps hover:bg-error/5 hover:border-error transition-colors mt-auto">Revoke All Sessions</button>
+</section>
+<!-- Theme Personalization (Full Width Bento) -->
+<section class="md:col-span-12 bg-surface-container dark:bg-surface border border-outline-variant/10 rounded-xl p-8 shadow-[0_40px_60px_-15px_rgba(0,0,0,0.8)] transition-all duration-500 hover:bg-surface-container-high">
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+<div>
+<h3 class="font-headline-md text-headline-md mb-2">Visual Atmosphere</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Select the ambient material for your workspace.</p>
+</div>
+<!-- Segmented Control -->
+<div class="flex p-1 bg-surface-container-lowest rounded-lg border border-outline-variant/20 w-full md:w-auto">
+<button class="flex-1 md:w-32 py-2 px-4 rounded-md bg-surface-container-high shadow-sm text-on-surface font-label-caps text-label-caps border border-outline-variant/10 transition-all">OBSIDIAN</button>
+<button class="flex-1 md:w-32 py-2 px-4 rounded-md text-on-surface-variant hover:text-on-surface font-label-caps text-label-caps transition-all">MATTE</button>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="h-40 rounded-lg border border-outline-variant/20 bg-surface-container-lowest flex items-center justify-center overflow-hidden relative group">
+<div class="absolute inset-0 bg-gradient-to-br from-surface to-background opacity-50 group-hover:opacity-100 transition-opacity duration-700"></div>
+<span class="font-label-caps text-label-caps text-on-surface-variant tracking-widest relative z-10">ACTIVE PREVIEW</span>
+</div>
+<div class="h-40 rounded-lg border border-outline-variant/10 bg-surface-container-highest flex items-center justify-center overflow-hidden relative group opacity-50 hover:opacity-100 transition-opacity duration-500 cursor-pointer">
+<div class="absolute inset-0 bg-gradient-to-br from-surface-bright to-surface-variant opacity-20"></div>
+<span class="font-label-caps text-label-caps text-on-surface-variant tracking-widest relative z-10">INACTIVE PREVIEW</span>
+</div>
+</div>
+</section>
+</div>
+</div>
+<!-- Footer -->
+<footer class="w-full py-8 border-t border-outline-variant/5 bg-surface-container-lowest mt-auto z-10">
+<div class="flex flex-col md:flex-row justify-between items-center px-margin-safe opacity-40 hover:opacity-100 transition-opacity duration-700 max-w-desktop-max-width mx-auto">
+<p class="font-label-caps text-label-caps text-on-surface text-tertiary">© 2024 MAIL CODECODER. THE ART OF PRECISION.</p>
+<ul class="flex gap-6 mt-4 md:mt-0 font-label-caps text-label-caps text-on-tertiary-container">
+<li><a class="hover:text-primary transition-colors" href="#">Privacy</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Terms</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Encryption</a></li>
+</ul>
+</div>
+</footer>
+</main>
+</body></html>

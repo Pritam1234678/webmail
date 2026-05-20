@@ -1,29 +1,9 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '@/lib/api'
-
-function Particle({ delay, x, y, size }: { delay: number; x: number; y: number; size: number }) {
-  return (
-    <motion.div
-      className="absolute rounded-full bg-accent-blue opacity-0 pointer-events-none"
-      style={{ left: `${x}%`, top: `${y}%`, width: size, height: size }}
-      animate={{
-        opacity: [0, 0.4, 0],
-        y: [0, -60, -120],
-        scale: [1, 1.2, 0.8],
-      }}
-      transition={{
-        duration: 4 + Math.random() * 3,
-        delay,
-        repeat: Infinity,
-        ease: 'easeInOut',
-      }}
-    />
-  )
-}
 
 export default function LoginPage() {
   const router = useRouter()
@@ -31,31 +11,20 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [mounted, setMounted] = useState(false)
-
-  const particles = useRef(
-    Array.from({ length: 20 }, (_, i) => ({
-      id: i,
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      size: 2 + Math.random() * 3,
-      delay: Math.random() * 4,
-    }))
-  )
+  const [userFocus, setUserFocus] = useState(false)
+  const [passFocus, setPassFocus] = useState(false)
+  const [btnHover, setBtnHover] = useState(false)
 
   useEffect(() => {
-    setMounted(true)
-    // Check if already logged in
-    api.auth.session().then((data: any) => {
-      if (data?.session || data?.user) router.replace('/mail')
+    api.auth.session().then((d: any) => {
+      if (d?.session || d?.user) router.replace('/mail')
     }).catch(() => {})
   }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!username.trim() || !password) return
-    setError('')
-    setLoading(true)
+    if (!username || !password) return
+    setError(''); setLoading(true)
     try {
       await api.auth.login(username.trim(), password)
       router.replace('/mail')
@@ -67,125 +36,171 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-primary flex items-center justify-center relative overflow-hidden">
-      {/* Ambient background */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full opacity-5"
-          style={{ background: 'radial-gradient(circle, #3b82f6 0%, transparent 70%)' }} />
-        <div className="absolute bottom-1/4 left-1/3 w-[400px] h-[400px] rounded-full opacity-3"
-          style={{ background: 'radial-gradient(circle, #8b5cf6 0%, transparent 70%)' }} />
+    <div style={{
+      minHeight: '100vh',
+      background: 'linear-gradient(to bottom, #0e0e0e, #131313)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      position: 'relative', overflow: 'hidden', flexDirection: 'column',
+    }}>
+      {/* Atmospheric glows */}
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+        <div style={{ position: 'absolute', top: '25%', left: '25%', width: 384, height: 384, background: 'rgba(233,195,73,0.05)', borderRadius: '50%', filter: 'blur(120px)' }} />
+        <div style={{ position: 'absolute', bottom: '25%', right: '25%', width: 500, height: 500, background: 'rgba(200,198,197,0.04)', borderRadius: '50%', filter: 'blur(150px)' }} />
       </div>
 
-      {/* Particles */}
-      {mounted && particles.current.map(p => (
-        <Particle key={p.id} x={p.x} y={p.y} size={p.size} delay={p.delay} />
-      ))}
-
-      {/* Subtle grid */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.02]"
-        style={{
-          backgroundImage: `linear-gradient(#3b82f6 1px, transparent 1px), linear-gradient(90deg, #3b82f6 1px, transparent 1px)`,
-          backgroundSize: '60px 60px',
-        }}
-      />
-
-      <motion.div
-        initial={{ opacity: 0, y: 24, scale: 0.97 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="relative w-full max-w-[400px] mx-4"
+      <motion.main
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: [0.2, 0, 0, 1] }}
+        style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: 480, padding: '0 24px' }}
       >
-        {/* Logo */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.4 }}
-          className="text-center mb-8"
-        >
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-bg-elevated border border-border-default shadow-md-dark mb-4"
-            style={{ boxShadow: '0 0 0 1px rgba(59,130,246,0.1), 0 4px 12px rgba(0,0,0,0.5)' }}>
-            <span className="text-xl font-bold text-text-primary tracking-tighter">C</span>
+        {/* Glassmorphism Card */}
+        <div style={{
+          background: 'rgba(28,27,27,0.8)',
+          backdropFilter: 'blur(30px)',
+          WebkitBackdropFilter: 'blur(30px)',
+          border: '1px solid rgba(68,71,72,0.2)',
+          borderRadius: 8,
+          padding: '48px',
+          boxShadow: '0 40px 80px -20px rgba(0,0,0,0.8)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+        }}>
+          {/* Logo */}
+          <div style={{ marginBottom: 48 }}>
+            <h1 style={{
+              fontFamily: 'Hanken Grotesk, sans-serif',
+              fontSize: 20, fontWeight: 600, letterSpacing: '0.08em',
+              textTransform: 'uppercase', lineHeight: 1,
+            }}>
+              <span style={{ color: '#e9c349', textDecoration: 'underline', textDecorationColor: '#e9c349' }}>MAIL</span>
+              {' '}
+              <span style={{ color: '#e5e2e1' }}>CODECC</span>
+            </h1>
           </div>
-          <h1 className="text-[22px] font-semibold text-text-primary tracking-tight">Codecoder Mail</h1>
-          <p className="text-[13px] text-text-tertiary mt-1">Sign in to your account</p>
-        </motion.div>
 
-        {/* Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15, duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-          className="bg-bg-elevated border border-border-default rounded-2xl overflow-hidden"
-          style={{ boxShadow: '0 0 0 1px rgba(255,255,255,0.04) inset, 0 20px 60px rgba(0,0,0,0.6)' }}
-        >
-          <form onSubmit={handleSubmit} className="p-6 space-y-4">
-            {/* Username field */}
-            <div className="space-y-1.5">
-              <label className="text-[12px] font-medium text-text-tertiary uppercase tracking-wider">Username</label>
-              <input
-                type="text"
-                value={username}
-                onChange={e => setUsername(e.target.value)}
-                placeholder="support"
-                autoComplete="username"
-                autoFocus
-                className="w-full px-3.5 py-2.5 bg-bg-tertiary border border-border-default rounded-xl text-[14px] text-text-primary placeholder:text-text-muted outline-none transition-all duration-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue/20"
-              />
+          {/* Form */}
+          <form onSubmit={handleSubmit} style={{ width: '100%' }}>
+            {/* Executive ID field */}
+            <div style={{ marginBottom: 32, position: 'relative' }}>
+              <label style={{
+                display: 'block', fontFamily: 'Hanken Grotesk', fontSize: 12, fontWeight: 600,
+                letterSpacing: '0.12em', textTransform: 'uppercase',
+                color: userFocus ? '#e9c349' : '#c4c7c7',
+                marginBottom: 8, transition: 'color 0.3s',
+              }}>Executive ID</label>
+              <div style={{ position: 'relative' }}>
+                <span className="material-symbols-outlined" style={{
+                  position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)',
+                  color: userFocus ? '#e9c349' : '#c4c7c7',
+                  transition: 'color 0.3s', pointerEvents: 'none', fontSize: 20,
+                }}>badge</span>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={e => setUsername(e.target.value)}
+                  onFocus={() => setUserFocus(true)}
+                  onBlur={() => setUserFocus(false)}
+                  placeholder=""
+                  autoFocus
+                  required
+                  style={{
+                    width: '100%', background: 'transparent', border: 'none',
+                    borderBottom: `1px solid ${userFocus ? '#e9c349' : 'rgba(68,71,72,0.4)'}`,
+                    color: '#e5e2e1', fontFamily: 'Hanken Grotesk', fontSize: 16,
+                    padding: '12px 0 12px 36px', outline: 'none',
+                    transition: 'border-color 0.3s cubic-bezier(0.2,0,0,1)',
+                  }}
+                />
+              </div>
             </div>
 
-            {/* Password field */}
-            <div className="space-y-1.5">
-              <label className="text-[12px] font-medium text-text-tertiary uppercase tracking-wider">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
-                autoComplete="current-password"
-                className="w-full px-3.5 py-2.5 bg-bg-tertiary border border-border-default rounded-xl text-[14px] text-text-primary placeholder:text-text-muted outline-none transition-all duration-200 focus:border-accent-blue focus:ring-1 focus:ring-accent-blue/20"
-              />
+            {/* Clearance Key field */}
+            <div style={{ marginBottom: 40, position: 'relative' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <label style={{
+                  fontFamily: 'Hanken Grotesk', fontSize: 12, fontWeight: 600,
+                  letterSpacing: '0.12em', textTransform: 'uppercase',
+                  color: passFocus ? '#e9c349' : '#c4c7c7',
+                  transition: 'color 0.3s',
+                }}>Clearance Key</label>
+                <span style={{ fontFamily: 'Hanken Grotesk', fontSize: 12, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#c4c7c7', opacity: 0.6, cursor: 'pointer' }}>Recover</span>
+              </div>
+              <div style={{ position: 'relative' }}>
+                <span className="material-symbols-outlined" style={{
+                  position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)',
+                  color: passFocus ? '#e9c349' : '#c4c7c7',
+                  transition: 'color 0.3s', pointerEvents: 'none', fontSize: 20,
+                }}>key</span>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  onFocus={() => setPassFocus(true)}
+                  onBlur={() => setPassFocus(false)}
+                  required
+                  style={{
+                    width: '100%', background: 'transparent', border: 'none',
+                    borderBottom: `1px solid ${passFocus ? '#e9c349' : 'rgba(68,71,72,0.4)'}`,
+                    color: '#e5e2e1', fontFamily: 'Hanken Grotesk', fontSize: 16,
+                    padding: '12px 0 12px 36px', outline: 'none',
+                    transition: 'border-color 0.3s cubic-bezier(0.2,0,0,1)',
+                  }}
+                />
+              </div>
             </div>
 
             {/* Error */}
             <AnimatePresence>
               {error && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="px-3.5 py-2.5 bg-accent-red/10 border border-accent-red/20 rounded-xl"
-                >
-                  <p className="text-[13px] text-accent-red">{error}</p>
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                  style={{ marginBottom: 16, padding: '10px 14px', background: 'rgba(255,180,171,0.1)', border: '1px solid rgba(255,180,171,0.2)', borderRadius: 4 }}>
+                  <p style={{ fontSize: 13, color: '#ffb4ab' }}>{error}</p>
                 </motion.div>
               )}
             </AnimatePresence>
 
             {/* Submit */}
-            <motion.button
+            <button
               type="submit"
               disabled={loading || !username || !password}
-              whileHover={{ scale: loading ? 1 : 1.01 }}
-              whileTap={{ scale: loading ? 1 : 0.98 }}
-              className="w-full py-2.5 px-4 bg-accent-blue hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium text-[14px] rounded-xl transition-all duration-200 flex items-center justify-center gap-2"
-              style={{ boxShadow: '0 1px 2px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.05) inset' }}
+              onMouseEnter={() => setBtnHover(true)}
+              onMouseLeave={() => setBtnHover(false)}
+              style={{
+                width: '100%',
+                background: btnHover ? '#2a2a2a' : '#353535',
+                color: '#e5e2e1',
+                fontFamily: 'Hanken Grotesk', fontSize: 12, fontWeight: 600,
+                letterSpacing: '0.12em', textTransform: 'uppercase',
+                padding: '16px 24px',
+                border: btnHover ? '1px solid rgba(233,195,73,0.5)' : '1px solid rgba(68,71,72,0.3)',
+                borderRadius: 2, cursor: loading ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
+                transition: 'all 0.5s cubic-bezier(0.2,0,0,1)',
+                boxShadow: btnHover ? '0 0 20px rgba(233,195,73,0.1)' : 'none',
+                opacity: (loading || !username || !password) ? 0.5 : 1,
+              }}
             >
               {loading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Signing in...</span>
-                </>
+                <div style={{ width: 16, height: 16, border: '1.5px solid rgba(229,226,225,0.3)', borderTopColor: '#e5e2e1', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
               ) : (
-                'Sign in'
+                <>
+                  Enter the Workspace
+                  <span className="material-symbols-outlined" style={{ fontSize: 20, color: btnHover ? '#e9c349' : '#c4c7c7', transition: 'all 0.5s cubic-bezier(0.2,0,0,1)', transform: btnHover ? 'translateX(4px)' : 'none' }}>arrow_forward</span>
+                </>
               )}
-            </motion.button>
+            </button>
           </form>
+        </div>
 
-          {/* Footer */}
-          <div className="px-6 py-3 bg-bg-tertiary border-t border-border-subtle">
-            <p className="text-[11px] text-text-muted text-center tracking-wide">SECURE TERMINAL ACCESS</p>
-          </div>
-        </motion.div>
-      </motion.div>
+        {/* Footer */}
+        <div style={{ marginTop: 32, textAlign: 'center' }}>
+          <p style={{ fontFamily: 'Hanken Grotesk', fontSize: 12, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#c4c7c7', opacity: 0.4 }}>
+            Strictly Confidential • Authorized Personnel Only
+          </p>
+        </div>
+      </motion.main>
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   )
 }

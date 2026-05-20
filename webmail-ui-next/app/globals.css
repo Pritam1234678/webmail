@@ -1,92 +1,76 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&family=JetBrains+Mono:wght@400;500&display=swap');
+/* Obsidian Cinema Design System */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@layer base {
-  *, *::before, *::after {
-    box-sizing: border-box;
-  }
-
-  html {
-    height: 100%;
-  }
-
-  body {
-    height: 100%;
-    background-color: #0a0a0b;
-    color: #f2f2f7;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    font-size: 14px;
-    line-height: 1.5;
-  }
-
-  #__next, main {
-    height: 100%;
-  }
-
-  ::selection {
-    background-color: rgba(59, 130, 246, 0.3);
-    color: #f2f2f7;
-  }
-
-  ::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: #3a3a42;
-    border-radius: 99px;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: #636370;
-  }
-
-  input, textarea {
-    background: transparent;
-  }
-
-  input:-webkit-autofill,
-  input:-webkit-autofill:hover,
-  input:-webkit-autofill:focus {
-    -webkit-text-fill-color: #f2f2f7;
-    -webkit-box-shadow: 0 0 0px 1000px #18181b inset;
-    transition: background-color 5000s ease-in-out 0s;
-  }
+:root {
+  /* Surfaces */
+  --bg:         #0e0e0e;
+  --surface:    #131313;
+  --surface-low: #1c1b1b;
+  --surface-mid: #20201f;
+  --surface-high: #2a2a2a;
+  --surface-highest: #353535;
+  --surface-bright: #393939;
+  /* Text */
+  --on-surface: #e5e2e1;
+  --on-surface-var: #c4c7c7;
+  /* Accent — Champagne Gold */
+  --gold:       #e9c349;
+  --gold-dim:   #af8d11;
+  /* Borders */
+  --outline:    #8e9192;
+  --outline-var: #444748;
+  /* Error */
+  --error:      #ffb4ab;
+  /* Easing */
+  --ease-physical: cubic-bezier(0.2, 0, 0, 1);
 }
 
-@layer utilities {
-  .font-mono-custom {
-    font-family: 'JetBrains Mono', 'Fira Code', monospace;
-  }
-
-  .text-shadow-sm {
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-  }
-
-  .border-gradient {
-    border-image: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02)) 1;
-  }
-
-  .glow-blue {
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.2), 0 0 60px rgba(59, 130, 246, 0.05);
-  }
-
-  .surface-inset {
-    box-shadow: 0 0 0 1px rgba(255,255,255,0.05) inset;
-  }
-
-  .frosted {
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-  }
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--on-surface);
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+/* Typography helpers */
+.playfair { font-family: 'Playfair Display', Georgia, serif; }
+.hanken   { font-family: 'Hanken Grotesk', system-ui, sans-serif; }
+.label-caps {
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  display: inline-block;
+  white-space: nowrap;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--outline-var); border-radius: 99px; }
+
+/* Input autofill */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--on-surface);
+  -webkit-box-shadow: 0 0 0 1000px var(--surface-low) inset;
+  transition: background-color 9999s;
+}
+
+input, textarea, button, select { font-family: inherit; }
+a { color: inherit; text-decoration: none; }

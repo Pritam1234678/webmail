@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MAIL CODECODER - Search &amp; Command Palette</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;600&amp;family=Playfair+Display:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed-variant": "#574500",
+                        "secondary-fixed": "#ffe088",
+                        "inverse-surface": "#e5e2e1",
+                        "secondary-fixed-dim": "#e9c349",
+                        "outline": "#8e9192",
+                        "on-primary-fixed": "#1c1b1b",
+                        "on-error-container": "#ffdad6",
+                        "surface": "#131313",
+                        "tertiary-container": "#111312",
+                        "on-background": "#e5e2e1",
+                        "outline-variant": "#444748",
+                        "primary-fixed": "#e5e2e1",
+                        "surface-container-low": "#1c1b1b",
+                        "surface-container-highest": "#353535",
+                        "surface-container": "#20201f",
+                        "on-secondary-container": "#342800",
+                        "secondary": "#e9c349",
+                        "primary-fixed-dim": "#c8c6c5",
+                        "surface-container-high": "#2a2a2a",
+                        "error-container": "#93000a",
+                        "inverse-on-surface": "#313030",
+                        "on-surface-variant": "#c4c7c7",
+                        "primary": "#c8c6c5",
+                        "on-secondary-fixed": "#241a00",
+                        "on-primary": "#313030",
+                        "on-surface": "#e5e2e1",
+                        "tertiary": "#c6c7c4",
+                        "surface-dim": "#131313",
+                        "error": "#ffb4ab",
+                        "on-tertiary": "#2f312f",
+                        "on-tertiary-fixed": "#1a1c1a",
+                        "surface-variant": "#353535",
+                        "on-error": "#690005",
+                        "secondary-container": "#af8d11",
+                        "on-secondary": "#3c2f00",
+                        "on-primary-container": "#7e7d7d",
+                        "surface-tint": "#c8c6c5",
+                        "surface-container-lowest": "#0e0e0e",
+                        "on-tertiary-container": "#7d7e7c",
+                        "background": "#131313",
+                        "surface-bright": "#393939",
+                        "on-primary-fixed-variant": "#474646",
+                        "inverse-primary": "#5f5e5e",
+                        "tertiary-fixed": "#e2e3e0",
+                        "on-tertiary-fixed-variant": "#454745",
+                        "primary-container": "#121212",
+                        "tertiary-fixed-dim": "#c6c7c4"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "unit": "8px",
+                        "desktop-max-width": "1440px",
+                        "margin-safe": "40px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Hanken Grotesk"],
+                        "label-caps": ["Hanken Grotesk"],
+                        "headline-lg": ["Playfair Display"],
+                        "headline-lg-mobile": ["Playfair Display"],
+                        "hero-display": ["Playfair Display"],
+                        "headline-md": ["Playfair Display"],
+                        "body-lg": ["Hanken Grotesk"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", { "lineHeight": "24px", "letterSpacing": "0.01em", "fontWeight": "400" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.12em", "fontWeight": "600" }],
+                        "headline-lg": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "hero-display": ["72px", { "lineHeight": "80px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "500" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "letterSpacing": "0.01em", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill-icon {
+            font-variation-settings: 'FILL' 1;
+        }
+        .custom-bezier {
+            transition-timing-function: cubic-bezier(0.2, 0.0, 0.0, 1.0);
+        }
+        
+        /* Subtle overlay gradients to simulate cinematic depth */
+        .cinematic-vignette {
+            background: radial-gradient(circle at center, transparent 30%, rgba(10, 10, 10, 0.9) 100%);
+            pointer-events: none;
+        }
+        
+        .search-glass {
+            background: rgba(18, 18, 18, 0.85);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+        }
+
+        /* Keyboard shortcut styling */
+        .kbd-key {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #2a2a2a;
+            border: 1px solid #444748;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 10px;
+            color: #c4c7c7;
+            font-family: monospace;
+            box-shadow: 0 2px 0 rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md text-body-md antialiased overflow-hidden selection:bg-secondary selection:text-on-secondary relative h-screen w-screen">
+<!-- Background Context (Simulated App underneath) -->
+<div class="absolute inset-0 opacity-20 filter blur-sm transition-all duration-1000">
+<div class="h-full w-full bg-[url('https://images.unsplash.com/photo-1497215728101-856f4ea42174?ixlib=rb-4.0.3&amp;auto=format&amp;fit=crop&amp;w=2070&amp;q=80')] bg-cover bg-center" data-alt="A softly focused, cinematic background showing a dark, luxurious modern office environment. The scene is deeply shadowed with warm ambient light catching subtle architectural details, conveying a premium, high-end corporate atmosphere."></div>
+</div>
+<!-- Fullscreen Search Overlay -->
+<div class="absolute inset-0 z-50 flex flex-col search-glass transition-opacity duration-500 custom-bezier">
+<!-- Top Command Bar -->
+<header class="w-full flex-shrink-0 border-b border-outline-variant/10 bg-surface/50 backdrop-blur-md">
+<div class="max-w-desktop-max-width mx-auto flex items-center px-margin-safe h-24">
+<span aria-hidden="true" class="material-symbols-outlined text-3xl text-secondary mr-6 opacity-80">search</span>
+<input autocomplete="off" autofocus="" class="flex-1 bg-transparent border-none outline-none text-headline-lg-mobile md:text-headline-lg font-headline-lg-mobile md:font-headline-lg text-primary placeholder-on-surface-variant/40 focus:ring-0 px-0 h-full" placeholder="Search emails, contacts, or commands..." spellcheck="false" type="text"/>
+<div class="flex items-center space-x-4 ml-6">
+<button class="text-on-surface-variant hover:text-on-surface transition-colors custom-bezier flex items-center group">
+<span class="kbd-key mr-2 group-hover:border-secondary/50 group-hover:text-secondary transition-colors">ESC</span>
+<span class="font-label-caps text-label-caps tracking-widest uppercase opacity-60 group-hover:opacity-100">Close</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto w-full py-12 px-margin-safe custom-bezier relative">
+<div class="max-w-desktop-max-width mx-auto grid grid-cols-1 md:grid-cols-12 gap-gutter h-full">
+<!-- Left Sidebar: Filters & Scope -->
+<aside class="col-span-1 md:col-span-3 flex flex-col space-y-12">
+<!-- Search Scope -->
+<div>
+<h3 class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest mb-6 opacity-60">Search In</h3>
+<ul class="space-y-2">
+<li>
+<button class="w-full flex items-center justify-between py-3 px-4 rounded-lg bg-surface-container-high border border-outline-variant/20 text-secondary font-medium transition-all custom-bezier">
+<div class="flex items-center space-x-3">
+<span class="material-symbols-outlined text-xl">all_inbox</span>
+<span>All Mailboxes</span>
+</div>
+<span class="kbd-key">⇧ 1</span>
+</button>
+</li>
+<li>
+<button class="w-full flex items-center justify-between py-3 px-4 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-all custom-bezier border border-transparent">
+<div class="flex items-center space-x-3 opacity-70">
+<span class="material-symbols-outlined text-xl">contacts</span>
+<span>Contacts</span>
+</div>
+<span class="kbd-key opacity-50">⇧ 2</span>
+</button>
+</li>
+<li>
+<button class="w-full flex items-center justify-between py-3 px-4 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-all custom-bezier border border-transparent">
+<div class="flex items-center space-x-3 opacity-70">
+<span class="material-symbols-outlined text-xl">attach_file</span>
+<span>Attachments</span>
+</div>
+<span class="kbd-key opacity-50">⇧ 3</span>
+</button>
+</li>
+</ul>
+</div>
+<!-- Quick Filters -->
+<div>
+<h3 class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest mb-6 opacity-60">Filters</h3>
+<div class="flex flex-wrap gap-2">
+<button class="px-4 py-2 rounded-full border border-outline-variant/30 text-sm hover:border-secondary/50 hover:text-secondary transition-colors custom-bezier bg-surface-container-low">Has Attachment</button>
+<button class="px-4 py-2 rounded-full border border-secondary/50 text-secondary text-sm transition-colors custom-bezier bg-secondary/10">Unread</button>
+<button class="px-4 py-2 rounded-full border border-outline-variant/30 text-sm hover:border-secondary/50 hover:text-secondary transition-colors custom-bezier bg-surface-container-low">From VIPs</button>
+<button class="px-4 py-2 rounded-full border border-outline-variant/30 text-sm hover:border-secondary/50 hover:text-secondary transition-colors custom-bezier bg-surface-container-low">Last 7 Days</button>
+</div>
+</div>
+</aside>
+<!-- Right Area: Results -->
+<section class="col-span-1 md:col-span-9 flex flex-col md:pl-12 md:border-l border-outline-variant/10">
+<!-- Suggestions / Recent (Default State) -->
+<div class="mb-12">
+<h3 class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest mb-6 opacity-60">Suggested Queries</h3>
+<div class="flex flex-wrap gap-4">
+<button class="flex items-center space-x-2 group text-on-surface-variant hover:text-on-surface transition-colors custom-bezier">
+<span class="material-symbols-outlined text-lg opacity-50 group-hover:text-secondary transition-colors">history</span>
+<span class="text-lg">"Contract"</span>
+</button>
+<button class="flex items-center space-x-2 group text-on-surface-variant hover:text-on-surface transition-colors custom-bezier">
+<span class="material-symbols-outlined text-lg opacity-50 group-hover:text-secondary transition-colors">history</span>
+<span class="text-lg">"Drafts"</span>
+</button>
+<button class="flex items-center space-x-2 group text-on-surface-variant hover:text-on-surface transition-colors custom-bezier">
+<span class="material-symbols-outlined text-lg opacity-50 group-hover:text-secondary transition-colors">history</span>
+<span class="text-lg">"Studio"</span>
+</button>
+</div>
+</div>
+<!-- Search Results (Simulated List) -->
+<div class="flex-1 flex flex-col space-y-2 relative">
+<h3 class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest mb-4 opacity-60 flex justify-between items-end">
+<span>Recent Results</span>
+<span class="text-[10px] opacity-50 normal-case">Use ↑↓ to navigate, ↵ to select</span>
+</h3>
+<!-- Result Item 1 (Active) -->
+<button class="w-full text-left bg-surface-container-highest border border-outline-variant/20 rounded-lg p-6 flex flex-col space-y-3 group transition-all custom-bezier hover:bg-surface-container-highest relative overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.4)]">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-secondary"></div>
+<div class="flex justify-between items-start w-full">
+<div class="flex items-center space-x-4">
+<div class="h-10 w-10 rounded-full bg-surface-container-low border border-outline-variant/30 flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-xl">description</span>
+</div>
+<div>
+<h4 class="font-headline-md text-headline-md text-on-surface mb-1 group-hover:text-secondary transition-colors line-clamp-1">Project Studio Alpha - Final <span class="bg-secondary/20 text-secondary px-1 rounded">Contract</span></h4>
+<p class="text-on-surface-variant opacity-80 text-sm">From: Elena Rostova &lt;elena@studio.io&gt;</p>
+</div>
+</div>
+<span class="text-on-surface-variant opacity-50 text-sm whitespace-nowrap">2 hrs ago</span>
+</div>
+<div class="pl-14">
+<p class="text-on-surface-variant opacity-70 line-clamp-2 text-sm leading-relaxed">
+                                    Please find attached the final finalized <span class="text-secondary font-medium">contract</span> for the upcoming Q3 campaign. Let me know if you need any adjustments before we proceed to the execution phase.
+                                </p>
+</div>
+</button>
+<!-- Result Item 2 -->
+<button class="w-full text-left bg-transparent border border-transparent rounded-lg p-6 flex flex-col space-y-3 group hover:bg-surface-container-high transition-all custom-bezier opacity-80 hover:opacity-100">
+<div class="flex justify-between items-start w-full">
+<div class="flex items-center space-x-4">
+<div class="h-10 w-10 rounded-full bg-surface-container-low border border-outline-variant/10 flex items-center justify-center text-on-surface-variant group-hover:border-outline-variant/30 transition-colors">
+<span class="material-symbols-outlined text-xl">draft</span>
+</div>
+<div>
+<h4 class="font-headline-md text-headline-md text-on-surface mb-1 group-hover:text-primary transition-colors line-clamp-1">Q2 Review Notes - <span class="bg-secondary/20 text-secondary px-1 rounded">Drafts</span></h4>
+<p class="text-on-surface-variant opacity-80 text-sm">Draft saved in folder: Reviews</p>
+</div>
+</div>
+<span class="text-on-surface-variant opacity-50 text-sm whitespace-nowrap">Yesterday</span>
+</div>
+<div class="pl-14">
+<p class="text-on-surface-variant opacity-70 line-clamp-2 text-sm leading-relaxed">
+                                    Initial thoughts on the performance metrics. Need to finalize the revenue projections before the all-hands meeting next week.
+                                </p>
+</div>
+</button>
+<!-- Result Item 3 -->
+<button class="w-full text-left bg-transparent border border-transparent rounded-lg p-6 flex flex-col space-y-3 group hover:bg-surface-container-high transition-all custom-bezier opacity-80 hover:opacity-100">
+<div class="flex justify-between items-start w-full">
+<div class="flex items-center space-x-4">
+<div class="h-10 w-10 rounded-full bg-surface-container-low border border-outline-variant/10 flex items-center justify-center text-on-surface-variant group-hover:border-outline-variant/30 transition-colors">
+<span class="material-symbols-outlined text-xl">person</span>
+</div>
+<div>
+<h4 class="font-headline-md text-headline-md text-on-surface mb-1 group-hover:text-primary transition-colors line-clamp-1">Marcus Thorne (<span class="bg-secondary/20 text-secondary px-1 rounded">Studio</span> Lead)</h4>
+<p class="text-on-surface-variant opacity-80 text-sm">Contact in Directory</p>
+</div>
+</div>
+<span class="text-on-surface-variant opacity-50 text-sm whitespace-nowrap">Contact</span>
+</div>
+<div class="pl-14 flex space-x-4">
+<span class="text-sm text-on-surface-variant opacity-70 flex items-center"><span class="material-symbols-outlined text-[16px] mr-1">mail</span> marcus.t@design.co</span>
+<span class="text-sm text-on-surface-variant opacity-70 flex items-center"><span class="material-symbols-outlined text-[16px] mr-1">call</span> +1 (555) 019-2834</span>
+</div>
+</button>
+</div>
+</section>
+</div>
+</main>
+<!-- Bottom Keyboard Shortcuts Footer -->
+<footer class="w-full py-4 border-t border-outline-variant/10 bg-surface/80 backdrop-blur-sm">
+<div class="max-w-desktop-max-width mx-auto flex justify-center items-center space-x-8 px-margin-safe opacity-50">
+<div class="flex items-center space-x-2">
+<span class="kbd-key">↑</span>
+<span class="kbd-key">↓</span>
+<span class="text-xs font-label-caps uppercase tracking-widest text-on-surface-variant">Navigate</span>
+</div>
+<div class="flex items-center space-x-2">
+<span class="kbd-key">↵</span>
+<span class="text-xs font-label-caps uppercase tracking-widest text-on-surface-variant">Select</span>
+</div>
+<div class="flex items-center space-x-2">
+<span class="kbd-key">⌘</span>
+<span class="kbd-key">K</span>
+<span class="text-xs font-label-caps uppercase tracking-widest text-on-surface-variant">Commands</span>
+</div>
+</div>
+</footer>
+<!-- Atmospheric Vignette Overlay -->
+<div class="absolute inset-0 cinematic-vignette mix-blend-multiply"></div>
+</div>
+</body></html>
