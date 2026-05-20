@@ -26,10 +26,16 @@ export default function LoginPage() {
     if (!username || !password) return
     setError(''); setLoading(true)
     try {
-      await api.auth.login(username.trim(), password)
+      const data: any = await api.auth.login(username.trim(), password)
+      // Persist session locally so MailContext survives cookie cross-domain issues
+      const userObj = data?.session || data?.user || data || {
+        email: username.includes('@') ? username : `${username}@codeoder.in`,
+        displayName: username,
+      }
+      try { localStorage.setItem('mc_session_user', JSON.stringify(userObj)) } catch {}
       router.replace('/mail')
     } catch (err: any) {
-      setError(err.message || 'Invalid credentials')
+      setError(err.message || 'Invalid credentials. Check username/password.')
     } finally {
       setLoading(false)
     }

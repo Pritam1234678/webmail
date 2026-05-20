@@ -34,6 +34,36 @@ interface MailContextType {
 
 const MailContext = createContext<MailContextType | null>(null)
 
+const SESSION_KEY = 'mc_session_user'
+const MAILBOX_KEY = 'mc_session_mailbox'
+
+function saveSession(user: User, mailbox?: Mailbox | null) {
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(user))
+    if (mailbox) localStorage.setItem(MAILBOX_KEY, JSON.stringify(mailbox))
+  } catch {}
+}
+
+function loadSession(): { user: User | null; mailbox: Mailbox | null } {
+  try {
+    const u = localStorage.getItem(SESSION_KEY)
+    const m = localStorage.getItem(MAILBOX_KEY)
+    return {
+      user: u ? JSON.parse(u) : null,
+      mailbox: m ? JSON.parse(m) : null,
+    }
+  } catch {
+    return { user: null, mailbox: null }
+  }
+}
+
+function clearSession() {
+  try {
+    localStorage.removeItem(SESSION_KEY)
+    localStorage.removeItem(MAILBOX_KEY)
+  } catch {}
+}
+
 export function MailProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
@@ -60,28 +90,76 @@ export function MailProvider({ children }: { children: ReactNode }) {
       setMailbox(data.mailbox)
       setMessages(data.messages || [])
     } catch (err: any) {
-      addToast('error', err.message || 'Failed to load messages')
+      // Don't show error for every poll failure
+      console.warn('Failed to load messages:', err.message)
+      setMessages([])
     } finally {
       setLoading(false)
     }
-  }, [addToast])
+  }, [])
 
   useEffect(() => {
+    // 1. First: restore from localStorage immediately (no flash)
+    const cached = loadSession()
+    if (cached.user) {
+      setUser(cached.user)
+      if (cached.mailbox) {
+        setMailbox(cached.mailbox)
+      }
+    }
+
+    // 2. Then validate with server (soft check — don't kick out on failure)
     api.auth.session()
       .then(async (data: any) => {
-        const u = data?.session || data?.user
-        if (!u) { router.replace('/login'); return }
+        const u = data?.session || data?.user || data
+        if (!u || typeof u !== 'object' || !u.email) {
+          // Server says no session — check if we have localStorage fallback
+          if (!cached.user) {
+            clearSession()
+            router.replace('/login')
+          }
+          // If we have localStorage user, keep them logged in
+          return
+        }
+
+        // Server confirmed session — update state
         setUser(u)
-        // Load mailboxes to get mailbox ID
-        const mbData: any = await api.mailboxes.list()
-        const mb = mbData?.mailboxes?.[0] || mbData?.[0]
-        if (mb) {
-          setMailbox(mb)
-          await loadMessages(mb.id, 'inbox', '')
+        saveSession(u)
+
+        // Load mailboxes
+        try {
+          const mbData: any = await api.mailboxes.list()
+          const mb = mbData?.mailboxes?.[0] || mbData?.[0]
+          if (mb) {
+            setMailbox(mb)
+            saveSession(u, mb)
+            await loadMessages(mb.id, 'inbox', '')
+          } else if (cached.mailbox) {
+            // Use cached mailbox if server didn't return one
+            await loadMessages(cached.mailbox.id, 'inbox', '')
+          }
+        } catch (err) {
+          console.warn('Mailbox load failed:', err)
+          // Try with cached mailbox
+          if (cached.mailbox) {
+            await loadMessages(cached.mailbox.id, 'inbox', '').catch(() => {})
+          }
         }
       })
-      .catch(() => router.replace('/login'))
-  }, [router, loadMessages])
+      .catch((err) => {
+        console.warn('Session check failed:', err.message)
+        // Don't redirect if we have a cached session — might be network issue
+        if (cached.user && cached.mailbox) {
+          // Load messages using cached mailbox
+          loadMessages(cached.mailbox.id, 'inbox', '').catch(() => {})
+          setLoading(false)
+        } else {
+          clearSession()
+          router.replace('/login')
+        }
+      })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const setSelectedFolder = useCallback((folder: string) => {
     setSelectedFolderState(folder)
@@ -109,6 +187,7 @@ export function MailProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     await api.auth.logout().catch(() => {})
+    clearSession()
     router.replace('/login')
   }, [router])
 
