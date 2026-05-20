@@ -17,39 +17,57 @@ final class SendService
 
         $headers = [
             'From: ' . $from,
-            'To: ' . $to,
-            'Subject: ' . $subject,
+            'MIME-Version: 1.0',
+            'Content-Type: text/html; charset=UTF-8',
+        ];
+
+        $phpMailHeaders = [
+            'From: ' . $from,
             'MIME-Version: 1.0',
             'Content-Type: text/html; charset=UTF-8',
         ];
 
         if ($cc !== '') {
-            $headers[] = 'Cc: ' . $cc;
+            $phpMailHeaders[] = 'Cc: ' . $cc;
         }
 
-        $message = implode("\r\n", $headers) . "\r\n\r\n" . $body . "\r\n";
+        $headersString = implode("\n", $phpMailHeaders);
 
-        $descriptors = [
-            0 => ['pipe', 'w'],
-            1 => ['pipe', 'r'],
-            2 => ['pipe', 'r'],
+        // Use PHP native mail function for reliability
+        $success = mail($to, $subject, $body, $headersString);
+
+        if (!$success) {
+            throw new RuntimeException('PHP mail() function failed to send email');
+        }
+
+        // Add Date and standard Headers for the IMAP append
+        $imapHeaders = [
+            'From: ' . $from,
+            'To: ' . $to,
+            'Subject: ' . $subject,
+            'Date: ' . date('r'),
+            'Message-ID: <' . bin2hex(random_bytes(16)) . '@codecoder.in>',
+            'MIME-Version: 1.0',
+            'Content-Type: text/html; charset=UTF-8',
         ];
-
-        $process = proc_open(Config::SENDMAIL_PATH . ' -t -i', $descriptors, $pipes);
-        if (!is_resource($process)) {
-            throw new RuntimeException('Unable to start sendmail');
+        
+        if ($cc !== '') {
+            $imapHeaders[] = 'Cc: ' . $cc;
         }
 
-        fwrite($pipes[0], $message);
-        fclose($pipes[0]);
-        $stdout = stream_get_contents($pipes[1]);
-        $stderr = stream_get_contents($pipes[2]);
-        fclose($pipes[1]);
-        fclose($pipes[2]);
-
-        $exitCode = proc_close($process);
-        if ($exitCode !== 0) {
-            throw new RuntimeException('Sendmail failed: ' . trim($stderr ?: $stdout));
+        try {
+            $imap = new ImapClient();
+            $imap->connect();
+            // Using session password that was saved during auth
+            $imap->login($user['userId'], $_SESSION['imap_password']);
+            
+            $sentFolder = Config::FOLDER_MAP['sent'] ?? 'Sent';
+            $rawMessage = implode("\r\n", $imapHeaders) . "\r\n\r\n" . $body;
+            
+            $imap->appendMessage($sentFolder, $rawMessage);
+            $imap->logout();
+        } catch (Throwable $e) {
+            // Ignore if append fails, email was already sent successfully
         }
 
         return [

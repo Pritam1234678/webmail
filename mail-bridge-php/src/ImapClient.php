@@ -96,6 +96,32 @@ final class ImapClient
         return $messages[0] ?? null;
     }
 
+    public function appendMessage(string $folderName, string $message): void
+    {
+        $tag = 'A' . str_pad((string) ++$this->tagCounter, 4, '0', STR_PAD_LEFT);
+        $safeFolder = $this->quote($folderName);
+        $length = strlen($message);
+        
+        fwrite($this->stream, "{$tag} APPEND {$safeFolder} (\\Seen) {{$length}}\r\n");
+        
+        $response = $this->readLine();
+        if ($response === null || strpos($response, '+') !== 0) {
+            throw new RuntimeException('IMAP append rejected literal');
+        }
+        
+        fwrite($this->stream, $message . "\r\n");
+        
+        while (($line = $this->readLine()) !== null) {
+            if (strpos($line, $tag . ' ') === 0) {
+                if (stripos($line, 'OK') === false) {
+                    throw new RuntimeException('IMAP append failed');
+                }
+                return;
+            }
+        }
+        throw new RuntimeException('IMAP connection closed during append');
+    }
+
     public function logout(): void
     {
         if (is_resource($this->stream)) {
