@@ -232,7 +232,7 @@ final class ImapClient
                 'to' => $headers['to'] ?? '',
                 'date' => $headers['date'] ?? '',
                 'messageId' => $headers['message-id'] ?? '',
-                'body' => $rawBody ? nl2br(htmlspecialchars(trim($rawBody))) : null,
+                'body' => $this->extractMessageBody($rawHeader, $rawBody),
             ];
         }
 
@@ -260,6 +260,79 @@ final class ImapClient
         }
 
         return $headers;
+    }
+
+    private function extractMessageBody(string $rawHeader, string $rawBody): ?string
+    {
+        if (!$rawBody) {
+            return null;
+        }
+
+        $headers = $this->parseHeaders($rawHeader);
+        $contentType = $headers['content-type'] ?? 'text/plain';
+        $encoding = strtolower($headers['content-transfer-encoding'] ?? '');
+
+        $parsed = $this->parseMimePart($contentType, $encoding, $rawBody);
+        
+        if ($parsed['html'] !== '') {
+            return trim($parsed['html']);
+        }
+        
+        if ($parsed['text'] !== '') {
+            return nl2br(htmlspecialchars(trim($parsed['text'])));
+        }
+
+        return nl2br(htmlspecialchars(trim($rawBody)));
+    }
+
+    private function parseMimePart(string $contentType, string $encoding, string $body): array
+    {
+        $html = '';
+        $text = '';
+
+        if (stripos($contentType, 'multipart/') === false) {
+            $decoded = $this->decodeString($body, $encoding);
+            if (stripos($contentType, 'text/html') !== false) {
+                $html = $decoded;
+            } else {
+                $text = $decoded;
+            }
+            return ['html' => $html, 'text' => $text];
+        }
+
+        if (preg_match('/boundary="?([^";\s]+)"?/i', $contentType, $matches)) {
+            $boundary = $matches[1];
+            $parts = explode('--' . $boundary, $body);
+
+            foreach ($parts as $part) {
+                $part = preg_replace('/^\r?\n/', '', $part);
+                if ($part === '' || $part === '--' || strpos($part, "--\r\n") === 0) continue;
+
+                $split = preg_split("/\r\n\r\n|\n\n/", $part, 2);
+                if (count($split) !== 2) continue;
+
+                $partHeaders = $this->parseHeaders($split[0]);
+                $partType = $partHeaders['content-type'] ?? 'text/plain';
+                $partEncoding = strtolower($partHeaders['content-transfer-encoding'] ?? '');
+                
+                $result = $this->parseMimePart($partType, $partEncoding, $split[1]);
+                if ($result['html'] !== '') $html = $result['html'];
+                if ($result['text'] !== '' && $text === '') $text = $result['text'];
+            }
+        }
+
+        return ['html' => $html, 'text' => $text];
+    }
+
+    private function decodeString(string $data, string $encoding): string
+    {
+        if (strpos($encoding, 'quoted-printable') !== false) {
+            return quoted_printable_decode($data);
+        }
+        if (strpos($encoding, 'base64') !== false) {
+            return base64_decode(trim($data));
+        }
+        return $data;
     }
 
     private function readBytes(int $length): string
