@@ -1,0 +1,137 @@
+.app-shell {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.auth-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.sidebar {
+  border-right: 1px solid var(--border);
+  background: rgba(8, 12, 20, 0.88);
+  backdrop-filter: blur(18px);
+  padding: 20px 16px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: auto;
+}
+
+.workspace {
+  padding: 20px;
+  min-width: 0;
+}
+
+.topbar {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.brand-mark {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.brand-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--accent), #58d4ff);
+  color: #08101d;
+  font-weight: 700;
+}
+
+.search-host {
+  min-width: 0;
+}
+
+.profile-chip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.profile-chip span {
+  display: block;
+  color: var(--text-soft);
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.presence-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--success);
+  box-shadow: 0 0 0 6px rgba(91, 214, 163, 0.12);
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, var(--list-width)) minmax(0, 1fr);
+  gap: 20px;
+  min-height: calc(100vh - 124px);
+}
+
+.panel {
+  background: rgba(14, 18, 28, 0.86);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  min-width: 0;
+}
+
+.mail-list-panel,
+.mail-view-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 20px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.mail-list-toolbar {
+  display: flex;
+  gap: 10px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  overflow: auto;
+}
+
+.mail-list {
+  overflow: auto;
+  min-height: 0;
+}
+
+.mail-view {
+  min-height: 0;
+  overflow: auto;
+  padding: 20px;
+}
