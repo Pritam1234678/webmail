@@ -22,7 +22,9 @@ $sendService = new SendService();
 function readJsonBody(): array
 {
     $raw = file_get_contents('php://input');
-    return ($raw === false || $raw === '') ? [] : (json_decode($raw, true) ?: []);
+    if (!$raw) return [];
+    $data = json_decode($raw, true);
+    return is_array($data) ? $data : [];
 }
 
 try {
@@ -44,18 +46,22 @@ try {
         Response::json(['ok' => (bool)$user, 'session' => $user], $user ? 200 : 401);
     }
 
+    if ($method === 'GET' && $path === '/v1/auth/me') {
+        Response::json(['ok' => true, 'user' => SessionAuth::requireUser()]);
+    }
+
     if ($method === 'GET' && $path === '/v1/mailboxes') {
         Response::json(['ok' => true, 'mailboxes' => $mailService->listMailboxes(SessionAuth::requireUser())]);
     }
 
     if ($method === 'GET' && preg_match('#^/v1/mailboxes/([^/]+)$#', $path, $matches)) {
         $user = SessionAuth::requireUser();
-        $folder = $_GET['folder'] ?? 'inbox';
+        $folder = $_GET["folder"] ?? "inbox"; $limit = (int)($_GET["limit"] ?? 50); $offset = (int)($_GET["offset"] ?? 0);
         $query = $_GET['q'] ?? '';
         Response::json([
             'ok' => true,
             'mailbox' => $mailService->listMailboxes($user)[0],
-            'messages' => $mailService->listMessages($user, $folder, $query),
+            'messages' => $mailService->listMessages($user, $folder, $query, $limit, $offset),
         ]);
     }
 
@@ -78,7 +84,8 @@ try {
 
     if ($method === 'POST' && $path === '/v1/messages/send') {
         $payload = !empty($_POST) ? $_POST : readJsonBody();
-        $result = $sendService->send(SessionAuth::requireUser(), $payload, $_FILES['attachments'] ?? []);
+        $files = $_FILES['attachments'] ?? [];
+        $result = $sendService->send(SessionAuth::requireUser(), $payload, $files);
         Response::json(['ok' => true] + $result, 202);
     }
 

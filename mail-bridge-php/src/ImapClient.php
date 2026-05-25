@@ -81,7 +81,7 @@ final class ImapClient
         $this->executeSimple('SELECT ' . $this->quote($folderName));
     }
 
-    public function searchUids(int $limit = 30, string $query = ''): array
+    public function searchUids(int $limit = 50, int $offset = 0, string $query = ""): array
     {
         $command = 'UID SEARCH ALL';
         if ($query !== '') {
@@ -101,7 +101,7 @@ final class ImapClient
         $uids = array_map('intval', $uids);
         rsort($uids);
 
-        return array_slice($uids, 0, $limit);
+        return array_slice($uids, $offset, $limit);
     }
 
     public function fetchHeaders(array $uids): array

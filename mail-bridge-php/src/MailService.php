@@ -38,13 +38,13 @@ final class MailService
         } finally { $imap->logout(); }
     }
 
-    public function listMessages(array $user, string $folderId, string $query = ''): array
+    public function listMessages(array $user, string $folderId, string $query = "", int $limit = 50, int $offset = 0): array
     {
         $folderName = Config::FOLDER_MAP[$folderId] ?? 'INBOX';
         $imap = $this->getConnectedClient($user['userId'], $_SESSION['imap_password']);
         try {
             try { $imap->selectMailbox($folderName); } catch (Throwable $e) { return []; }
-            $uids = $imap->searchUids(30, $query);
+            $uids = $imap->searchUids($limit, $offset, $query);
             $headers = $imap->fetchHeaders($uids);
             return array_map(function (array $message) use ($user, $folderId) {
                 $sender = $message['from'] ?: $user['email'];
