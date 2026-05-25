@@ -84,7 +84,7 @@ function Sidebar() {
         {NAV_ITEMS.map(item => {
           const isActive = selectedFolder === item.id && pathname === '/mail'
           const folderData = mailbox?.folders?.find((f: any) => f.id === item.id)
-          const count = item.id === 'inbox' ? folderData?.unread : folderData?.count
+          const count = (item.id === 'inbox' ? folderData?.unread : folderData?.count) || 0
 
           return (
             <button
