@@ -70,7 +70,7 @@ try {
     }
 
     if ($method === 'GET' && preg_match('#^/v1/messages/(.+)$#', $path, $matches)) {
-        $message = $mailService->getMessage(SessionAuth::requireUser(), $matches[1]);
+        $message = $mailService->getMessage(SessionAuth::requireUser(), urldecode($matches[1]));
         if (!$message) Response::error('Message not found', 404);
         Response::json(['ok' => true, 'message' => $message]);
     }
