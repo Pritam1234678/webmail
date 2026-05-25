@@ -28,7 +28,8 @@ export const api = {
   },
   mailboxes: {
     list: () => fetchAPI('/v1/mailboxes'),
-    get: (id: string, folder = 'inbox', q = '') => fetchAPI(`/v1/mailboxes/${id}?folder=${folder}&q=${encodeURIComponent(q)}`),
+    get: (id: string, folder = 'inbox', q = '', limit = 50, offset = 0) => 
+      fetchAPI(`/v1/mailboxes/${id}?folder=${folder}&q=${encodeURIComponent(q)}&limit=${limit}&offset=${offset}`),
   },
   messages: {
     get: (id: string) => fetchAPI(`/v1/messages/${encodeURIComponent(id)}`),
