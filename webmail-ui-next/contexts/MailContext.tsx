@@ -12,11 +12,13 @@ interface MailContextType {
   selectedMessage: Message | null; selectedFolder: string;
   loading: boolean; messageLoading: boolean; composeOpen: boolean;
   searchQuery: string; toasts: Toast[];
+  hasMore: boolean;
   setSelectedFolder: (folder: string) => void;
   setSelectedMessage: (msg: Message | null) => void;
   setComposeOpen: (open: boolean) => void;
   setSearchQuery: (q: string) => void;
   refreshMessages: () => void;
+  loadMore: () => Promise<void>;
   logout: () => void;
   addToast: (type: Toast['type'], message: string) => void;
   sendEmail: (to: string, subject: string, body: string, cc?: string, bcc?: string, attachments?: File[]) => Promise<void>;
@@ -26,6 +28,7 @@ interface MailContextType {
 
 const MailContext = createContext<MailContextType | null>(null)
 const SESSION_KEY = 'mc_session_user'; const MAILBOX_KEY = 'mc_session_mailbox'
+const PAGE_SIZE = 50
 
 export function MailProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
@@ -39,6 +42,7 @@ export function MailProvider({ children }: { children: ReactNode }) {
   const [composeOpen, setComposeOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [toasts, setToasts] = useState<Toast[]>([])
+  const [hasMore, setHasMore] = useState(false)
 
   const addToast = useCallback((type: Toast['type'], message: string) => {
     const id = Math.random().toString(36).slice(2)
@@ -46,12 +50,23 @@ export function MailProvider({ children }: { children: ReactNode }) {
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000)
   }, [])
 
-  const loadMessages = useCallback(async (mailboxId: string, folder: string, q: string) => {
-    setLoading(true)
+  const loadMessages = useCallback(async (mailboxId: string, folder: string, q: string, offset = 0) => {
+    if (offset === 0) setLoading(true)
     try {
-      const data: any = await api.mailboxes.get(mailboxId, folder, q)
-      setMailbox(data.mailbox); setMessages(data.messages || [])
-    } catch (err: any) { setMessages([]) } finally { setLoading(false) }
+      const data: any = await api.mailboxes.get(mailboxId, folder, q, PAGE_SIZE, offset)
+      setMailbox(data.mailbox)
+      const newMessages = data.messages || []
+      if (offset === 0) {
+        setMessages(newMessages)
+      } else {
+        setMessages(prev => [...prev, ...newMessages])
+      }
+      setHasMore(newMessages.length === PAGE_SIZE)
+    } catch (err: any) { 
+      if (offset === 0) setMessages([]) 
+    } finally { 
+      setLoading(false) 
+    }
   }, [])
 
   useEffect(() => {
@@ -82,10 +97,15 @@ export function MailProvider({ children }: { children: ReactNode }) {
       setSelectedMessageState(data?.message || msg)
       if (msg.unread) {
         setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, unread: false } : m))
-        // If unread, count might need update in sidebar
       }
     } catch {} finally { setMessageLoading(false) }
   }, [])
+
+  const loadMore = useCallback(async () => {
+    if (mailbox && !loading && hasMore) {
+      await loadMessages(mailbox.id, selectedFolder, searchQuery, messages.length)
+    }
+  }, [mailbox, loading, hasMore, selectedFolder, searchQuery, messages.length, loadMessages])
 
   const archiveMessage = useCallback(async (msg: Message) => {
     try {
@@ -120,14 +140,14 @@ export function MailProvider({ children }: { children: ReactNode }) {
       if (cc) p.append('cc', cc); if (bcc) p.append('bcc', bcc)
       attachments?.forEach(f => p.append('attachments[]', f))
     }
-    await api.messages.send(p); addToast('success', 'Email sent')
+    await api.messages.send(p)
     if (selectedFolder === 'sent') refreshMessages()
-  }, [addToast, selectedFolder, refreshMessages])
+  }, [selectedFolder, refreshMessages])
 
   return (
     <MailContext.Provider value={{
-      user, mailbox, messages, selectedMessage, selectedFolder, loading, messageLoading, composeOpen, searchQuery, toasts,
-      setSelectedFolder, setSelectedMessage, setComposeOpen, setSearchQuery, refreshMessages, logout, addToast, sendEmail, archiveMessage, deleteMessage
+      user, mailbox, messages, selectedMessage, selectedFolder, loading, messageLoading, composeOpen, searchQuery, toasts, hasMore,
+      setSelectedFolder, setSelectedMessage, setComposeOpen, setSearchQuery, refreshMessages, loadMore, logout, addToast, sendEmail, archiveMessage, deleteMessage
     }}>
       {children}
     </MailContext.Provider>
