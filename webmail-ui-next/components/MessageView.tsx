@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useMail } from '@/contexts/MailContext'
 
 const T = {
-  bg: '#0e0e0e', surface: '#131313', surfaceMid: '#20201f', surfaceHigh: '#2a2a2a',
+  bg: '#0e0e0e', surface: '#131313', surfaceLow: '#1c1b1b', surfaceMid: '#20201f', surfaceHigh: '#2a2a2a',
   onSurface: '#e5e2e1', onSurfaceVar: '#c4c7c7', gold: '#e9c349', outline: 'rgba(68,71,72,0.4)',
 }
 
