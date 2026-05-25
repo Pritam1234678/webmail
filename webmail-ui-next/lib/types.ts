@@ -16,6 +16,7 @@ export interface Folder {
   label: string
   hint: string
   count: number
+  unread: number
   icon: string
 }
 
