@@ -4,18 +4,20 @@ final class SessionAuth
 {
     public static function boot(): void
     {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            return;
+        }
+
         session_name(Config::SESSION_NAME);
         session_set_cookie_params([
             'lifetime' => 0,
             'path'     => '/',
-            'secure'   => Config::cookieSecure(),
+            'secure'   => Config::COOKIE_SECURE,
             'httponly' => true,
-            'samesite' => Config::cookieSameSite(),
+            'samesite' => Config::COOKIE_SAMESITE,
         ]);
 
-        if (session_status() !== PHP_SESSION_ACTIVE) {
-            session_start();
-        }
+        session_start();
     }
 
     public static function login(string $username, string $email): void
@@ -46,6 +48,7 @@ final class SessionAuth
 
     public static function user(): ?array
     {
+        self::boot();
         return $_SESSION['user'] ?? null;
     }
 
@@ -56,5 +59,10 @@ final class SessionAuth
             Response::error('Unauthorized', 401);
         }
         return $user;
+    }
+
+    public static function bootIfNeeded(): void
+    {
+        self::boot();
     }
 }
