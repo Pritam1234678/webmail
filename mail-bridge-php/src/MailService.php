@@ -4,25 +4,49 @@ final class MailService
 {
     public function authenticate(string $username, string $password): array
     {
-        $email = Config::ALLOWED_MAILBOXES[$username] ?? null;
+        // Find mapping: user might provide 'support' or 'support@codecoder.in'
+        $email = null;
+        $mailboxId = null;
+
+        foreach (Config::ALLOWED_MAILBOXES as $id => $mappedEmail) {
+            if ($username === $id || $username === $mappedEmail) {
+                $email = $mappedEmail;
+                $mailboxId = $id;
+                break;
+            }
+        }
+
         if (!$email) {
-            throw new RuntimeException('Unknown mailbox');
+            throw new RuntimeException('Unknown mailbox: ' . $username);
         }
 
         $imap = new ImapClient();
 
         try {
             $imap->connect();
-            $imap->login($username, $password);
+            // Dovecot expects full email as username
+            $imap->login($email, $password);
+            
             return [
-                'userId' => $username,
-                'mailboxId' => $username,
+                'userId' => $mailboxId,
+                'mailboxId' => $mailboxId,
                 'email' => $email,
-                'displayName' => ucfirst($username),
+                'displayName' => ucfirst($mailboxId),
             ];
         } finally {
             $imap->logout();
         }
+    }
+
+    private function getConnectedClient(string $mailboxId, string $password): ImapClient
+    {
+        $email = Config::ALLOWED_MAILBOXES[$mailboxId] ?? null;
+        if (!$email) throw new RuntimeException('Invalid mailbox session');
+
+        $imap = new ImapClient();
+        $imap->connect();
+        $imap->login($email, $password);
+        return $imap;
     }
 
     public function listMailboxes(array $user): array
@@ -114,88 +138,65 @@ final class MailService
                 'starred' => $message['starred'],
                 'tags' => [],
                 'attachments' => [],
-                'thread' => [],
             ];
         } finally {
             $imap->logout();
         }
     }
 
-    private function getConnectedClient(string $username, string $password): ImapClient
-    {
-        $imap = new ImapClient();
-        $imap->connect();
-        $imap->login($username, $password);
-        return $imap;
-    }
-
     private function folderStats(ImapClient $imap): array
     {
-        $folders = [];
-
-        foreach (Config::FOLDER_MAP as $id => $imapName) {
-            try {
-                $imap->selectMailbox($imapName);
-                $count = count($imap->searchUids(200));
-            } catch (Throwable $e) {
-                $count = 0;
-            }
-
-            $folders[] = [
+        $stats = [];
+        foreach (Config::FOLDER_MAP as $id => $name) {
+            $count = $imap->getMessageCount($name);
+            $unread = $imap->getUnreadCount($name);
+            $stats[] = [
                 'id' => $id,
-                'label' => ucfirst($id),
-                'hint' => match ($id) {
-                    'inbox' => 'Priority mail',
-                    'sent' => 'Delivered mail',
-                    'drafts' => 'Saved for later',
-                    'spam' => 'Filtered mail',
-                    'trash' => 'Deleted items',
-                    default => '',
-                },
+                'name' => ucfirst($id),
                 'count' => $count,
-                'icon' => substr($id, 0, 2),
+                'unread' => $unread,
+                'icon' => $this->getFolderIcon($id),
             ];
         }
-
-        return $folders;
+        return $stats;
     }
 
-    private function decodeMessageId(string $messageId): array
+    private function getFolderIcon(string $id): string
     {
-        $decoded = base64_decode($messageId, true);
-        if (!$decoded) {
-            throw new RuntimeException('Invalid message id');
-        }
-
-        $parts = explode('|', $decoded);
-        if (count($parts) !== 3) {
-            throw new RuntimeException('Invalid message id');
-        }
-
-        return $parts;
+        return match($id) {
+            'inbox' => 'inbox',
+            'sent' => 'send',
+            'drafts' => 'file',
+            'spam' => 'alert-circle',
+            'trash' => 'trash-2',
+            default => 'folder',
+        };
     }
 
-    private function extractDisplayName(string $raw): string
+    private function extractDisplayName(string $from): string
     {
-        if (preg_match('/^(.*?)\s*<.*>$/', $raw, $matches)) {
-            return trim($matches[1], "\"' ") ?: $this->extractEmail($raw);
+        if (preg_match('/^"?(.*?)"?\s*<.*?>/', $from, $matches)) {
+            return $matches[1];
         }
-
-        return $this->extractEmail($raw);
+        return explode('@', $from)[0];
     }
 
-    private function extractEmail(string $raw): string
+    private function extractEmail(string $from): string
     {
-        if (preg_match('/<([^>]+)>/', $raw, $matches)) {
-            return trim($matches[1]);
+        if (preg_match('/<(.*?)>/', $from, $matches)) {
+            return $matches[1];
         }
-
-        return trim($raw);
+        return $from;
     }
 
     private function normalizeDate(string $date): string
     {
-        $timestamp = strtotime($date);
-        return $timestamp ? gmdate('c', $timestamp) : gmdate('c');
+        $ts = strtotime($date);
+        return $ts ? date('c', $ts) : date('c');
+    }
+
+    private function decodeMessageId(string $id): array
+    {
+        return explode('|', base64_decode($id));
     }
 }

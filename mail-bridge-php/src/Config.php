@@ -20,8 +20,8 @@ final class Config
 
     public static function cookieSameSite(): string
     {
-        // SameSite=None requires Secure — use Lax on HTTP (localhost dev)
-        return self::isHttps() ? 'None' : 'Lax';
+        // SameSite=None requires Secure — use None on HTTP (localhost dev)
+        return self::isHttps() ? 'None' : 'None';
     }
 
     // Keep constants for legacy compat
