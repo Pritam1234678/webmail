@@ -26,7 +26,7 @@ export default function LoginPage() {
     if (!username || !password) return
     setError(''); setLoading(true)
     try {
-      const data: any = await api.auth.login(username.trim(), password)
+      const data: any = await api.auth.login({ username: username.trim(), password })
       // Persist session locally so MailContext survives cookie cross-domain issues
       const userObj = data?.session || data?.user || data || {
         email: username.includes('@') ? username : `${username}@codeoder.in`,
