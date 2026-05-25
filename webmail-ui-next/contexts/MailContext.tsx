@@ -11,6 +11,15 @@ interface Toast {
   message: string
 }
 
+interface SendPayload {
+  to: string
+  subject: string
+  body: string
+  cc?: string
+  bcc?: string
+  attachments?: File[]
+}
+
 interface MailContextType {
   user: User | null
   mailbox: Mailbox | null
@@ -29,7 +38,7 @@ interface MailContextType {
   refreshMessages: () => void
   logout: () => void
   addToast: (type: Toast['type'], message: string) => void
-  sendEmail: (to: string, subject: string, body: string, cc?: string) => Promise<void>
+  sendEmail: (to: string, subject: string, body: string, cc?: string, bcc?: string, attachments?: File[]) => Promise<void>
 }
 
 const MailContext = createContext<MailContextType | null>(null)
@@ -90,7 +99,6 @@ export function MailProvider({ children }: { children: ReactNode }) {
       setMailbox(data.mailbox)
       setMessages(data.messages || [])
     } catch (err: any) {
-      // Don't show error for every poll failure
       console.warn('Failed to load messages:', err.message)
       setMessages([])
     } finally {
@@ -99,7 +107,6 @@ export function MailProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    // 1. First: restore from localStorage immediately (no flash)
     const cached = loadSession()
     if (cached.user) {
       setUser(cached.user)
@@ -108,25 +115,20 @@ export function MailProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // 2. Then validate with server (soft check — don't kick out on failure)
     api.auth.session()
       .then(async (data: any) => {
         const u = data?.session || data?.user || data
         if (!u || typeof u !== 'object' || !u.email) {
-          // Server says no session — check if we have localStorage fallback
           if (!cached.user) {
             clearSession()
             router.replace('/login')
           }
-          // If we have localStorage user, keep them logged in
           return
         }
 
-        // Server confirmed session — update state
         setUser(u)
         saveSession(u)
 
-        // Load mailboxes
         try {
           const mbData: any = await api.mailboxes.list()
           const mb = mbData?.mailboxes?.[0] || mbData?.[0]
@@ -135,12 +137,10 @@ export function MailProvider({ children }: { children: ReactNode }) {
             saveSession(u, mb)
             await loadMessages(mb.id, 'inbox', '')
           } else if (cached.mailbox) {
-            // Use cached mailbox if server didn't return one
             await loadMessages(cached.mailbox.id, 'inbox', '')
           }
         } catch (err) {
           console.warn('Mailbox load failed:', err)
-          // Try with cached mailbox
           if (cached.mailbox) {
             await loadMessages(cached.mailbox.id, 'inbox', '').catch(() => {})
           }
@@ -148,9 +148,7 @@ export function MailProvider({ children }: { children: ReactNode }) {
       })
       .catch((err) => {
         console.warn('Session check failed:', err.message)
-        // Don't redirect if we have a cached session — might be network issue
         if (cached.user && cached.mailbox) {
-          // Load messages using cached mailbox
           loadMessages(cached.mailbox.id, 'inbox', '').catch(() => {})
           setLoading(false)
         } else {
@@ -158,8 +156,7 @@ export function MailProvider({ children }: { children: ReactNode }) {
           router.replace('/login')
         }
       })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [router, loadMessages])
 
   const setSelectedFolder = useCallback((folder: string) => {
     setSelectedFolderState(folder)
@@ -191,8 +188,22 @@ export function MailProvider({ children }: { children: ReactNode }) {
     router.replace('/login')
   }, [router])
 
-  const sendEmail = useCallback(async (to: string, subject: string, body: string, cc?: string) => {
-    await api.messages.send({ to, subject, body, cc })
+  const sendEmail = useCallback(async (to: string, subject: string, body: string, cc?: string, bcc?: string, attachments?: File[]) => {
+    let payload: any;
+    
+    if (attachments && attachments.length > 0) {
+      payload = new FormData()
+      payload.append('to', to)
+      payload.append('subject', subject)
+      payload.append('body', body)
+      if (cc) payload.append('cc', cc)
+      if (bcc) payload.append('bcc', bcc)
+      attachments.forEach(file => payload.append('attachments[]', file))
+    } else {
+      payload = { to, subject, body, cc, bcc }
+    }
+
+    await api.messages.send(payload)
     addToast('success', 'Email sent successfully')
     if (selectedFolder === 'sent') refreshMessages()
   }, [addToast, selectedFolder, refreshMessages])

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useMail } from '@/contexts/MailContext'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 
 /* ─── Design Tokens ─── */
 const T = {
@@ -31,9 +31,10 @@ const NAV_ITEMS = [
 function Sidebar() {
   const { user, selectedFolder, setSelectedFolder, setComposeOpen, logout, mailbox } = useMail()
   const router = useRouter()
-  const initials = user?.displayName?.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() || 'JD'
-  const unread = mailbox?.folders?.find((f: any) => f.id === 'inbox')?.count || 0
-
+  const pathname = usePathname()
+  
+  const initials = user?.displayName?.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() || 'SU'
+  
   return (
     <aside style={{
       width: 252, flexShrink: 0, display: 'flex', flexDirection: 'column',
@@ -41,7 +42,10 @@ function Sidebar() {
     }}>
       {/* Branding + Avatar */}
       <div style={{ padding: '20px 20px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${T.outline}` }}>
-        <h1 style={{ fontFamily: 'Hanken Grotesk', fontSize: 13, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1 }}>
+        <h1 
+          onClick={() => router.push('/mail')}
+          style={{ fontFamily: 'Hanken Grotesk', fontSize: 13, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', lineHeight: 1, cursor: 'pointer' }}
+        >
           <span style={{ color: T.gold, textDecoration: 'underline', textDecorationColor: T.gold }}>MAIL</span>
           {' '}
           <span style={{ color: T.onSurface }}>CODECC</span>
@@ -78,16 +82,22 @@ function Sidebar() {
       {/* Nav */}
       <nav style={{ flex: 1, padding: '8px 8px', overflowY: 'auto' }}>
         {NAV_ITEMS.map(item => {
-          const isActive = selectedFolder === item.id
+          const isActive = selectedFolder === item.id && pathname === '/mail'
+          const folderData = mailbox?.folders?.find((f: any) => f.id === item.id)
+          const count = item.id === 'inbox' ? folderData?.unread : folderData?.count
+
           return (
             <button
               key={item.id}
-              onClick={() => setSelectedFolder(item.id)}
+              onClick={() => {
+                setSelectedFolder(item.id)
+                if (pathname !== '/mail') router.push('/mail')
+              }}
               style={{
                 width: '100%', display: 'flex', alignItems: 'center', gap: 14,
-                padding: '10px 12px', background: 'none',
-              borderLeft: isActive ? `2px solid ${T.gold}` : '2px solid transparent',
-              border: 'none',
+                padding: '10px 12px', background: isActive ? T.surfaceLow : 'none',
+                border: 'none',
+                borderLeft: isActive ? `2px solid ${T.gold}` : '2px solid transparent',
                 color: isActive ? T.onSurface : T.onSurfaceVar,
                 fontFamily: 'Hanken Grotesk', fontSize: 14, fontWeight: isActive ? 500 : 400,
                 cursor: 'pointer', textAlign: 'left',
@@ -98,11 +108,15 @@ function Sidebar() {
             >
               <span className="material-symbols-outlined" style={{ fontSize: 18, color: isActive ? T.gold : 'inherit', fontVariationSettings: "'FILL' 0, 'wght' 200" }}>{item.icon}</span>
               {item.label}
-              {item.id === 'inbox' && unread > 0 && (
-                <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, fontFamily: 'Hanken Grotesk', color: T.surfaceLow, background: T.gold, padding: '2px 6px', borderRadius: 2 }}>{unread}</span>
-              )}
-              {item.id === 'drafts' && (
-                <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 600, fontFamily: 'Hanken Grotesk', color: T.onSurfaceVar }}>4</span>
+              {count > 0 && (
+                <span style={{ 
+                  marginLeft: 'auto', fontSize: 11, fontWeight: 600, 
+                  fontFamily: 'Hanken Grotesk', 
+                  color: (item.id === 'inbox') ? T.surfaceLow : T.onSurfaceVar,
+                  background: (item.id === 'inbox') ? T.gold : 'transparent',
+                  padding: (item.id === 'inbox') ? '2px 6px' : '0',
+                  borderRadius: 2 
+                }}>{count}</span>
               )}
             </button>
           )
@@ -112,17 +126,19 @@ function Sidebar() {
       {/* Footer actions */}
       <div style={{ padding: '8px', borderTop: `1px solid ${T.outline}` }}>
         {[
-          { icon: 'settings', label: 'Settings', action: () => router.push('/mail/settings') },
-          { icon: 'help', label: 'Support', action: () => {} },
+          { icon: 'settings', label: 'Settings', action: () => router.push('/mail/settings'), active: pathname === '/mail/settings' },
+          { icon: 'logout', label: 'Sign out', action: logout, active: false },
         ].map(item => (
           <button
             key={item.label}
             onClick={item.action}
             style={{
               width: '100%', display: 'flex', alignItems: 'center', gap: 14,
-              padding: '10px 12px', background: 'none', border: 'none',
-              borderLeft: '2px solid transparent',
-              color: T.onSurfaceVar, fontFamily: 'Hanken Grotesk', fontSize: 14,
+              padding: '10px 12px', background: item.active ? T.surfaceLow : 'none', 
+              border: 'none',
+              borderLeft: item.active ? `2px solid ${T.gold}` : '2px solid transparent',
+              color: item.active ? T.onSurface : T.onSurfaceVar, 
+              fontFamily: 'Hanken Grotesk', fontSize: 14,
               cursor: 'pointer', textAlign: 'left', marginBottom: 2,
               transition: 'color 0.2s',
             }}
@@ -161,12 +177,10 @@ function MessageList() {
 
   return (
     <div style={{ width: 440, flexShrink: 0, display: 'flex', flexDirection: 'column', height: '100%', background: T.surface, borderRight: `1px solid ${T.outline}` }}>
-      {/* Header */}
       <div style={{ padding: '24px 24px 0' }}>
         <h2 style={{ fontFamily: 'Playfair Display, Georgia, serif', fontSize: 40, fontWeight: 600, lineHeight: 1.2, letterSpacing: '-0.01em', color: T.onSurface, marginBottom: 16 }}>
           {folderLabel[selectedFolder] || selectedFolder}
         </h2>
-        {/* Tabs */}
         {selectedFolder === 'inbox' && (
           <div style={{ display: 'flex', gap: 24, borderBottom: `1px solid ${T.outline}`, marginBottom: 0 }}>
             {(['focused', 'other'] as const).map(t => (
@@ -190,7 +204,6 @@ function MessageList() {
         )}
       </div>
 
-      {/* Search */}
       <div style={{ padding: '16px 24px', borderBottom: `1px solid ${T.outline}` }}>
         <div style={{ position: 'relative' }}>
           <span className="material-symbols-outlined" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 16, color: T.onSurfaceVar }}>search</span>
@@ -213,7 +226,6 @@ function MessageList() {
         </div>
       </div>
 
-      {/* List */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {loading ? (
           Array.from({ length: 5 }).map((_, i) => (
@@ -234,7 +246,11 @@ function MessageList() {
         ) : (
           messages.map((msg, i) => {
             const isActive = selectedMessage?.id === msg.id
-            const senderName = msg.senderName || msg.senderEmail || 'Unknown'
+            const isSentFolder = selectedFolder === 'sent'
+            const displayName = isSentFolder 
+              ? (msg.recipients[0] || 'Unknown Recipient')
+              : (msg.senderName || msg.senderEmail || 'Unknown')
+
             return (
               <motion.button
                 key={msg.id}
@@ -253,22 +269,22 @@ function MessageList() {
                 onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = T.surfaceLow }}
                 onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent' }}
               >
-                {/* Avatar */}
                 <div style={{
                   width: 40, height: 40, borderRadius: 2, flexShrink: 0,
-                  background: getAvatarBg(senderName),
+                  background: getAvatarBg(displayName),
                   border: `1px solid ${T.outline}`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontFamily: 'Hanken Grotesk', fontSize: 12, fontWeight: 600,
                   color: msg.unread ? T.gold : T.onSurfaceVar, letterSpacing: '0.05em',
                 }}>
-                  {getInitials(senderName)}
+                  {getInitials(displayName)}
                 </div>
 
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                     <span style={{ fontFamily: 'Hanken Grotesk', fontSize: 12, fontWeight: 600, color: msg.unread ? T.gold : T.onSurfaceVar, letterSpacing: '0.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>
-                      {senderName}
+                      {isSentFolder && <span style={{ color: T.gold, fontSize: 9, marginRight: 4 }}>TO:</span>}
+                      {displayName}
                     </span>
                     <span style={{ fontFamily: 'Hanken Grotesk', fontSize: 11, color: T.onSurfaceVar, opacity: 0.6, flexShrink: 0 }}>
                       {formatTime(msg.timestamp)}
@@ -317,7 +333,6 @@ function MessageView() {
         transition={{ duration: 0.35, ease: [0.2, 0, 0, 1] }}
         style={{ flex: 1, display: 'flex', flexDirection: 'column', background: T.bg, overflow: 'hidden' }}
       >
-        {/* Toolbar */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 40px', borderBottom: `1px solid ${T.outline}` }}>
           <div style={{ display: 'flex', gap: 4 }}>
             <button onClick={() => setSelectedMessage(null)} style={toolbarBtnStyle}>
@@ -336,7 +351,6 @@ function MessageView() {
           </div>
         </div>
 
-        {/* Reading pane */}
         {messageLoading ? (
           <div style={{ flex: 1, padding: '48px 64px' }}>
             <div style={{ height: 48, background: T.surfaceLow, borderRadius: 2, width: '60%', marginBottom: 16 }} />
@@ -344,7 +358,6 @@ function MessageView() {
           </div>
         ) : (
           <div style={{ flex: 1, overflowY: 'auto', padding: '48px 64px' }}>
-            {/* Tags + Subject */}
             <div style={{ marginBottom: 32 }}>
               <h1 style={{
                 fontFamily: 'Playfair Display, Georgia, serif',
@@ -356,7 +369,6 @@ function MessageView() {
               </h1>
             </div>
 
-            {/* Sender row */}
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, marginBottom: 40, paddingBottom: 40, borderBottom: `1px solid ${T.outline}` }}>
               <div style={{
                 width: 44, height: 44, borderRadius: 2, flexShrink: 0,
@@ -371,7 +383,7 @@ function MessageView() {
                   <span style={{ fontFamily: 'Hanken Grotesk', fontSize: 14, fontWeight: 500, color: T.onSurface }}>{senderName}</span>
                   <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                     <span style={{ fontFamily: 'Hanken Grotesk', fontSize: 12, color: T.onSurfaceVar, opacity: 0.6 }}>
-                      Today, {new Date(selectedMessage.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {new Date(selectedMessage.timestamp).toLocaleString()}
                     </span>
                     <button style={{ ...toolbarBtnStyle, padding: 4 }}>
                       <span className="material-symbols-outlined" style={{ fontSize: 16, color: T.onSurfaceVar }}>details</span>
@@ -379,10 +391,12 @@ function MessageView() {
                   </div>
                 </div>
                 <p style={{ fontFamily: 'Hanken Grotesk', fontSize: 13, color: T.onSurfaceVar, opacity: 0.6 }}>{selectedMessage.senderEmail}</p>
+                <p style={{ fontFamily: 'Hanken Grotesk', fontSize: 12, color: T.onSurfaceVar, opacity: 0.5, marginTop: 4 }}>
+                  To: {selectedMessage.recipients?.join(', ')}
+                </p>
               </div>
             </div>
 
-            {/* Body */}
             <div style={{ fontFamily: 'Hanken Grotesk', fontSize: 16, lineHeight: 1.85, color: '#c0bdb8', maxWidth: 680, letterSpacing: '0.01em' }}>
               {isHtml ? (
                 <div dangerouslySetInnerHTML={{ __html: selectedMessage.body || '' }} />
@@ -393,7 +407,6 @@ function MessageView() {
               )}
             </div>
 
-            {/* Reply */}
             <div style={{ maxWidth: 680, marginTop: 48 }}>
               {!showReply ? (
                 <button

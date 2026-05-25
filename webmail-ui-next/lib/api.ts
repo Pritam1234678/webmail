@@ -3,9 +3,15 @@ const API_BASE = '/api'
 async function fetchAPI<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...options.headers },
     ...options,
+    headers: {
+      ...(!(options.body instanceof FormData) && { 'Content-Type': 'application/json' }),
+      ...options.headers,
+    },
   })
+  
+  if (res.status === 204) return {} as T
+  
   const data = await res.json()
   if (!res.ok) throw new Error(data.error || 'Request failed')
   return data
@@ -13,13 +19,13 @@ async function fetchAPI<T>(path: string, options: RequestInit = {}): Promise<T> 
 
 export const api = {
   auth: {
-    session: () => fetchAPI('/v1/auth/session'),
-    login: (username: string, password: string) =>
+    login: (credentials: any) =>
       fetchAPI('/v1/auth/session', {
         method: 'POST',
-        body: JSON.stringify({ username, password }),
+        body: JSON.stringify(credentials),
       }),
     logout: () => fetchAPI('/v1/auth/session', { method: 'DELETE' }),
+    session: () => fetchAPI('/v1/auth/session'),
     me: () => fetchAPI('/v1/auth/me'),
   },
   mailboxes: {
@@ -29,10 +35,10 @@ export const api = {
   },
   messages: {
     get: (id: string) => fetchAPI(`/v1/messages/${encodeURIComponent(id)}`),
-    send: (payload: { to: string; subject: string; body: string; cc?: string }) =>
+    send: (payload: FormData | any) =>
       fetchAPI('/v1/messages/send', {
         method: 'POST',
-        body: JSON.stringify(payload),
+        body: payload instanceof FormData ? payload : JSON.stringify(payload),
       }),
   },
 }
