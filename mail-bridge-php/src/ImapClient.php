@@ -50,6 +50,36 @@ final class ImapClient
         return $mailboxes;
     }
 
+    public function getMessageCount(string $folderName): int
+    {
+        try {
+            $response = $this->execute('STATUS ' . $this->quote($folderName) . ' (MESSAGES)');
+            foreach ($response['untagged'] as $line) {
+                if (preg_match('/\* STATUS .*? \(MESSAGES (\d+)\)/i', $line, $matches)) {
+                    return (int)$matches[1];
+                }
+            }
+        } catch (Throwable $e) {
+            // Folder might not exist yet
+        }
+        return 0;
+    }
+
+    public function getUnreadCount(string $folderName): int
+    {
+        try {
+            $response = $this->execute('STATUS ' . $this->quote($folderName) . ' (UNSEEN)');
+            foreach ($response['untagged'] as $line) {
+                if (preg_match('/\* STATUS .*? \(UNSEEN (\d+)\)/i', $line, $matches)) {
+                    return (int)$matches[1];
+                }
+            }
+        } catch (Throwable $e) {
+            // Folder might not exist yet
+        }
+        return 0;
+    }
+
     public function selectMailbox(string $folderName): void
     {
         $this->executeSimple('SELECT ' . $this->quote($folderName));
