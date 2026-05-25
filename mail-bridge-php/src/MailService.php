@@ -4,7 +4,6 @@ final class MailService
 {
     public function authenticate(string $username, string $password): array
     {
-        // Find mapping: user might provide 'support' or 'support@codecoder.in'
         $email = null;
         $mailboxId = null;
 
@@ -24,7 +23,6 @@ final class MailService
 
         try {
             $imap->connect();
-            // Dovecot expects full email as username
             $imap->login($email, $password);
             
             return [
@@ -70,15 +68,20 @@ final class MailService
 
     public function listMessages(array $user, string $folderId, string $query = ''): array
     {
-        $folderName = Config::FOLDER_MAP[$folderId] ?? Config::FOLDER_MAP['inbox'];
+        $folderName = Config::FOLDER_MAP[$folderId] ?? 'INBOX';
         $imap = $this->getConnectedClient($user['userId'], $_SESSION['imap_password']);
 
         try {
-            $imap->selectMailbox($folderName);
+            try {
+                $imap->selectMailbox($folderName);
+            } catch (Throwable $e) {
+                return [];
+            }
+            
             $uids = $imap->searchUids(30, $query);
             $headers = $imap->fetchHeaders($uids);
 
-            $messages = array_map(function (array $message) use ($user, $folderId) {
+            return array_map(function (array $message) use ($user, $folderId) {
                 $sender = $message['from'] ?: $user['email'];
                 return [
                     'id' => base64_encode($user['mailboxId'] . '|' . $folderId . '|' . $message['uid']),
@@ -96,8 +99,6 @@ final class MailService
                     'attachments' => [],
                 ];
             }, $headers);
-
-            return $messages;
         } finally {
             $imap->logout();
         }
@@ -105,21 +106,25 @@ final class MailService
 
     public function getMessage(array $user, string $messageId): ?array
     {
-        [$mailboxId, $folderId, $uid] = $this->decodeMessageId($messageId);
+        $decoded = base64_decode($messageId, true);
+        if (!$decoded) return null;
+        
+        $parts = explode('|', $decoded);
+        if (count($parts) < 3) return null;
+        
+        [$mailboxId, $folderId, $uid] = $parts;
         if ($mailboxId !== $user['mailboxId']) {
             throw new RuntimeException('Mailbox mismatch');
         }
 
-        $folderName = Config::FOLDER_MAP[$folderId] ?? Config::FOLDER_MAP['inbox'];
+        $folderName = Config::FOLDER_MAP[$folderId] ?? 'INBOX';
         $imap = $this->getConnectedClient($user['userId'], $_SESSION['imap_password']);
 
         try {
             $imap->selectMailbox($folderName);
             $message = $imap->fetchMessage((int) $uid);
 
-            if (!$message) {
-                return null;
-            }
+            if (!$message) return null;
 
             $sender = $message['from'] ?: $user['email'];
 
@@ -176,7 +181,7 @@ final class MailService
     private function extractDisplayName(string $from): string
     {
         if (preg_match('/^"?(.*?)"?\s*<.*?>/', $from, $matches)) {
-            return $matches[1];
+            return trim($matches[1]);
         }
         return explode('@', $from)[0];
     }
@@ -193,10 +198,5 @@ final class MailService
     {
         $ts = strtotime($date);
         return $ts ? date('c', $ts) : date('c');
-    }
-
-    private function decodeMessageId(string $id): array
-    {
-        return explode('|', base64_decode($id));
     }
 }

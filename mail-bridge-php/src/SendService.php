@@ -4,25 +4,20 @@ final class SendService
 {
     public function send(array $user, array $payload): array
     {
-        $to = trim((string) ($payload['to'] ?? ''));
-        $subject = trim((string) ($payload['subject'] ?? ''));
-        $body = trim((string) ($payload['body'] ?? ''));
+        $to = trim((string)($payload['to'] ?? ''));
+        $subject = trim((string)($payload['subject'] ?? ''));
+        $body = trim((string)($payload['body'] ?? ''));
 
         if ($to === '' || $subject === '' || $body === '') {
             throw new RuntimeException('Missing required fields');
         }
 
         $from = Config::ALLOWED_MAILBOXES[$user['userId']] ?? $user['email'];
-        $cc = trim((string) ($payload['cc'] ?? ''));
-
-        $headers = [
-            'From: ' . $from,
-            'MIME-Version: 1.0',
-            'Content-Type: text/html; charset=UTF-8',
-        ];
+        $cc = trim((string)($payload['cc'] ?? ''));
 
         $phpMailHeaders = [
             'From: ' . $from,
+            'Reply-To: ' . $from,
             'MIME-Version: 1.0',
             'Content-Type: text/html; charset=UTF-8',
         ];
@@ -31,43 +26,46 @@ final class SendService
             $phpMailHeaders[] = 'Cc: ' . $cc;
         }
 
-        $headersString = implode("\n", $phpMailHeaders);
+        $headersString = implode("\r\n", $phpMailHeaders);
 
-        // Use PHP native mail function for reliability
-        $success = mail($to, $subject, $body, $headersString);
+        // Send via local sendmail (which Postfix relays to Brevo)
+        // Use -f to set envelope sender for better relay compatibility
+        $success = mail($to, $subject, $body, $headersString, "-f $from");
 
         if (!$success) {
-            throw new RuntimeException('PHP mail() function failed to send email');
+            throw new RuntimeException('PHP mail() function failed');
         }
 
-        // Add Date and standard Headers for the IMAP append
-        $imapHeaders = [
-            'From: ' . $from,
-            'To: ' . $to,
-            'Subject: ' . $subject,
-            'Date: ' . date('r'),
-            'Message-ID: <' . bin2hex(random_bytes(16)) . '@codecoder.in>',
-            'MIME-Version: 1.0',
-            'Content-Type: text/html; charset=UTF-8',
-        ];
-        
-        if ($cc !== '') {
-            $imapHeaders[] = 'Cc: ' . $cc;
-        }
-
+        // Save to Sent folder via IMAP
         try {
             $imap = new ImapClient();
             $imap->connect();
-            // Using session password that was saved during auth
-            $imap->login($user['userId'], $_SESSION['imap_password']);
+            // Crucial: Use full email for Dovecot login
+            $imap->login($from, $_SESSION['imap_password']);
             
             $sentFolder = Config::FOLDER_MAP['sent'] ?? 'Sent';
+            
+            $imapHeaders = [
+                'From: ' . $from,
+                'To: ' . $to,
+                'Subject: ' . $subject,
+                'Date: ' . date('r'),
+                'Message-ID: <' . bin2hex(random_bytes(16)) . '@codecoder.in>',
+                'MIME-Version: 1.0',
+                'Content-Type: text/html; charset=UTF-8',
+            ];
+            
+            if ($cc !== '') {
+                $imapHeaders[] = 'Cc: ' . $cc;
+            }
+
             $rawMessage = implode("\r\n", $imapHeaders) . "\r\n\r\n" . $body;
             
             $imap->appendMessage($sentFolder, $rawMessage);
             $imap->logout();
         } catch (Throwable $e) {
-            // Ignore if append fails, email was already sent successfully
+            // Log but don't fail the request since mail was already sent
+            error_log("IMAP Sent Append failed: " . $e->getMessage());
         }
 
         return [
