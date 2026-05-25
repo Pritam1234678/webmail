@@ -1,20 +1,30 @@
 const API_BASE = '/api'
 
-function getAuthHeader() {
+function getAuthHeader(): Record<string, string> {
   if (typeof window === 'undefined') return {}
   const auth = localStorage.getItem('mc_auth_token')
   return auth ? { 'Authorization': `Basic ${auth}` } : {}
 }
 
 async function fetchAPI<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const headers: Record<string, string> = {}
+  
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json'
+  }
+  
+  const auth = getAuthHeader()
+  Object.assign(headers, auth)
+  
+  if (options.headers) {
+    const customHeaders = options.headers as Record<string, string>
+    Object.assign(headers, customHeaders)
+  }
+
   const res = await fetch(`${API_BASE}${path}`, {
-    credentials: 'include',
     ...options,
-    headers: {
-      ...(!(options.body instanceof FormData) && { 'Content-Type': 'application/json' }),
-      ...getAuthHeader(),
-      ...options.headers,
-    },
+    credentials: 'include',
+    headers,
   })
   
   if (res.status === 204) return {} as T
