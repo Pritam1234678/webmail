@@ -1,7 +1,7 @@
 <?php
 $origin = $_SERVER['HTTP_ORIGIN'] ?? '*';
 header("Access-Control-Allow-Origin: $origin");
-header("Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS");
+header("Access-Control-Allow-Methods: GET, POST, DELETE, PATCH, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
 header("Access-Control-Allow-Credentials: true");
 
@@ -14,8 +14,6 @@ require_once __DIR__ . '/../src/bootstrap.php';
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
-
-// Strip /api prefix for routing consistency
 $path = preg_replace('#^/api#', '', $path);
 
 $mailService = new MailService();
@@ -30,10 +28,8 @@ function readJsonBody(): array
 try {
     if ($method === 'POST' && $path === '/v1/auth/session') {
         $payload = readJsonBody();
-        $username = trim((string)($payload['username'] ?? ''));
-        $password = (string)($payload['password'] ?? '');
-        $user = $mailService->authenticate($username, $password);
-        $_SESSION['imap_password'] = $password;
+        $user = $mailService->authenticate($payload['username'] ?? '', $payload['password'] ?? '');
+        $_SESSION['imap_password'] = $payload['password'] ?? '';
         SessionAuth::login($user['userId'], $user['email']);
         Response::json(['ok' => true, 'session' => $user]);
     }
@@ -48,18 +44,12 @@ try {
         Response::json(['ok' => (bool)$user, 'session' => $user], $user ? 200 : 401);
     }
 
-    if ($method === 'GET' && $path === '/v1/auth/me') {
-        Response::json(['ok' => true, 'user' => SessionAuth::requireUser()]);
-    }
-
     if ($method === 'GET' && $path === '/v1/mailboxes') {
         Response::json(['ok' => true, 'mailboxes' => $mailService->listMailboxes(SessionAuth::requireUser())]);
     }
 
     if ($method === 'GET' && preg_match('#^/v1/mailboxes/([^/]+)$#', $path, $matches)) {
         $user = SessionAuth::requireUser();
-        if ($matches[1] !== $user['mailboxId']) Response::error('Forbidden', 403);
-        
         $folder = $_GET['folder'] ?? 'inbox';
         $query = $_GET['q'] ?? '';
         Response::json([
@@ -75,8 +65,20 @@ try {
         Response::json(['ok' => true, 'message' => $message]);
     }
 
+    if ($method === 'PATCH' && preg_match('#^/v1/messages/(.+)$#', $path, $matches)) {
+        $payload = readJsonBody();
+        $mailService->updateMessage(SessionAuth::requireUser(), urldecode($matches[1]), $payload);
+        Response::json(['ok' => true]);
+    }
+
+    if ($method === 'DELETE' && preg_match('#^/v1/messages/(.+)$#', $path, $matches)) {
+        $mailService->deleteMessage(SessionAuth::requireUser(), urldecode($matches[1]));
+        Response::json(['ok' => true]);
+    }
+
     if ($method === 'POST' && $path === '/v1/messages/send') {
-        $result = $sendService->send(SessionAuth::requireUser(), readJsonBody());
+        $payload = !empty($_POST) ? $_POST : readJsonBody();
+        $result = $sendService->send(SessionAuth::requireUser(), $payload, $_FILES['attachments'] ?? []);
         Response::json(['ok' => true] + $result, 202);
     }
 
