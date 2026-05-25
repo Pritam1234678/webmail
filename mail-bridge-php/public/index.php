@@ -50,6 +50,16 @@ try {
         Response::noContent();
     }
 
+    // GET /v1/auth/session — check current session status
+    if ($method === 'GET' && $path === '/v1/auth/session') {
+        $user = SessionAuth::user();
+        if ($user) {
+            Response::json(['ok' => true, 'session' => $user]);
+        } else {
+            Response::json(['ok' => false, 'session' => null], 401);
+        }
+    }
+
     if ($method === 'GET' && $path === '/v1/auth/me') {
         $user = SessionAuth::requireUser();
         Response::json(['ok' => true, 'user' => $user]);

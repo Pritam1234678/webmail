@@ -25,17 +25,22 @@ export async function PUT(request: NextRequest, ctx: Ctx) {
 }
 
 async function proxyRequest(request: NextRequest, pathSegments: string[]) {
+  // pathSegments = ['auth','session'] from /api/v1/auth/session
+  // Backend expects /api/v1/auth/session
   const path = pathSegments.join('/')
   const url = new URL(request.url)
-  const targetUrl = `${BACKEND}/api/${path}${url.search}`
+  // Preserve the full /api/v1/... path the backend expects
+  const targetUrl = `${BACKEND}/api/v1/${path}${url.search}`
+
+  console.log(`[Proxy] ${request.method} ${targetUrl}`)
 
   // Forward cookies from client → backend
   const cookieHeader = request.headers.get('cookie') || ''
 
   const headers: Record<string, string> = {
     'Accept': 'application/json',
-    'Cookie': cookieHeader,
   }
+  if (cookieHeader) headers['Cookie'] = cookieHeader
 
   const ct = request.headers.get('content-type')
   if (ct) headers['Content-Type'] = ct
@@ -53,19 +58,20 @@ async function proxyRequest(request: NextRequest, pathSegments: string[]) {
     })
 
     const responseText = await backendRes.text()
+    console.log(`[Proxy] Response: ${backendRes.status} body=${responseText.slice(0, 120)}`)
+
     const nextRes = new NextResponse(responseText, {
       status: backendRes.status,
     })
 
-    // Set content-type
+    // Forward content-type
     const resCt = backendRes.headers.get('content-type')
     if (resCt) nextRes.headers.set('content-type', resCt)
 
-    // Forward cookies — strip domain so they work on localhost
-    const raw = backendRes.headers.get('set-cookie')
-    if (raw) {
-      // Sanitize: remove Domain=..., Secure, change SameSite=None to Lax
-      const sanitized = raw
+    // Forward cookies — strip domain so they work on localhost too
+    const setCookieRaw = backendRes.headers.get('set-cookie')
+    if (setCookieRaw) {
+      const sanitized = setCookieRaw
         .replace(/;\s*domain=[^;,]*/gi, '')
         .replace(/;\s*secure/gi, '')
         .replace(/;\s*samesite=none/gi, '; SameSite=Lax')
@@ -74,7 +80,7 @@ async function proxyRequest(request: NextRequest, pathSegments: string[]) {
 
     return nextRes
   } catch (err: any) {
-    console.error('[API Proxy] Backend unreachable:', err.message)
+    console.error('[Proxy] Backend unreachable:', err.message)
     return NextResponse.json(
       { error: 'Backend unreachable', detail: err.message },
       { status: 503 }

@@ -7,10 +7,10 @@ final class SessionAuth
         session_name(Config::SESSION_NAME);
         session_set_cookie_params([
             'lifetime' => 0,
-            'path' => '/',
-            'secure' => Config::COOKIE_SECURE,
+            'path'     => '/',
+            'secure'   => Config::cookieSecure(),
             'httponly' => true,
-            'samesite' => Config::COOKIE_SAMESITE,
+            'samesite' => Config::cookieSameSite(),
         ]);
 
         if (session_status() !== PHP_SESSION_ACTIVE) {
@@ -21,9 +21,9 @@ final class SessionAuth
     public static function login(string $username, string $email): void
     {
         $_SESSION['user'] = [
-            'userId' => $username,
-            'mailboxId' => $username,
-            'email' => $email,
+            'userId'      => $username,
+            'mailboxId'   => $username,
+            'email'       => $email,
             'displayName' => ucfirst($username),
         ];
     }
@@ -33,7 +33,13 @@ final class SessionAuth
         $_SESSION = [];
         if (ini_get('session.use_cookies')) {
             $params = session_get_cookie_params();
-            setcookie(session_name(), '', time() - 42000, $params['path'], $params['domain'] ?? '', $params['secure'], $params['httponly']);
+            setcookie(
+                session_name(), '', time() - 42000,
+                $params['path'],
+                $params['domain'] ?? '',
+                $params['secure'],
+                $params['httponly']
+            );
         }
         session_destroy();
     }
@@ -49,7 +55,6 @@ final class SessionAuth
         if (!$user) {
             Response::error('Unauthorized', 401);
         }
-
         return $user;
     }
 }
