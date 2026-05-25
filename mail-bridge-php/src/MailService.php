@@ -52,7 +52,7 @@ final class MailService
                     'id' => base64_encode($user['mailboxId'] . '|' . $folderId . '|' . $message['uid']),
                     'mailboxId' => $user['mailboxId'], 'folder' => $folderId,
                     'senderName' => $this->extractDisplayName($sender), 'senderEmail' => $this->extractEmail($sender),
-                    'recipients' => [$user['email']], 'subject' => $message['subject'], 'snippet' => '',
+                    'recipients' => array_filter(array_map('trim', explode(',', $message['to'] ?: ''))), 'subject' => $message['subject'], 'snippet' => '',
                     'timestamp' => $this->normalizeDate($message['date']), 'unread' => $message['unread'],
                     'starred' => $message['starred'], 'tags' => [], 'attachments' => [],
                 ];
@@ -76,7 +76,7 @@ final class MailService
             return [
                 'id' => $messageId, 'mailboxId' => $mailboxId, 'folder' => $folderId,
                 'senderName' => $this->extractDisplayName($sender), 'senderEmail' => $this->extractEmail($sender),
-                'recipients' => [$user['email']], 'subject' => $message['subject'], 'snippet' => '',
+                'recipients' => array_filter(array_map('trim', explode(',', $message['to'] ?: ''))), 'subject' => $message['subject'], 'snippet' => '',
                 'body' => $message['body'] ?: '<p>(No preview body available)</p>',
                 'timestamp' => $this->normalizeDate($message['date']), 'unread' => false,
                 'starred' => $message['starred'], 'tags' => [], 'attachments' => [],
