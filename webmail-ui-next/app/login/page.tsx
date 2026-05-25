@@ -26,16 +26,22 @@ export default function LoginPage() {
     if (!username || !password) return
     setError(''); setLoading(true)
     try {
+      const email = username.includes('@') ? username : `${username}@codecoder.in`
+      // Store token for Authorization header (bypasses cookie issues on Vercel)
+      const token = btoa(`${email}:${password}`)
+      try { localStorage.setItem('mc_auth_token', token) } catch {}
+
       const data: any = await api.auth.login({ username: username.trim(), password })
-      // Persist session locally so MailContext survives cookie cross-domain issues
+      
       const userObj = data?.session || data?.user || data || {
-        email: username.includes('@') ? username : `${username}@codeoder.in`,
+        email: email,
         displayName: username,
       }
       try { localStorage.setItem('mc_session_user', JSON.stringify(userObj)) } catch {}
       router.replace('/mail')
     } catch (err: any) {
       setError(err.message || 'Invalid credentials. Check username/password.')
+      try { localStorage.removeItem('mc_auth_token') } catch {}
     } finally {
       setLoading(false)
     }
@@ -60,7 +66,6 @@ export default function LoginPage() {
         transition={{ duration: 0.6, ease: [0.2, 0, 0, 1] }}
         style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: 480, padding: '0 24px' }}
       >
-        {/* Glassmorphism Card */}
         <div style={{
           background: 'rgba(28,27,27,0.8)',
           backdropFilter: 'blur(30px)',
@@ -71,7 +76,6 @@ export default function LoginPage() {
           boxShadow: '0 40px 80px -20px rgba(0,0,0,0.8)',
           display: 'flex', flexDirection: 'column', alignItems: 'center',
         }}>
-          {/* Logo */}
           <div style={{ marginBottom: 48 }}>
             <h1 style={{
               fontFamily: 'Hanken Grotesk, sans-serif',
@@ -84,9 +88,7 @@ export default function LoginPage() {
             </h1>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} style={{ width: '100%' }}>
-            {/* Executive ID field */}
             <div style={{ marginBottom: 32, position: 'relative' }}>
               <label style={{
                 display: 'block', fontFamily: 'Hanken Grotesk', fontSize: 12, fontWeight: 600,
@@ -120,7 +122,6 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Clearance Key field */}
             <div style={{ marginBottom: 40, position: 'relative' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                 <label style={{
@@ -155,7 +156,6 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Error */}
             <AnimatePresence>
               {error && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
@@ -165,7 +165,6 @@ export default function LoginPage() {
               )}
             </AnimatePresence>
 
-            {/* Submit */}
             <button
               type="submit"
               disabled={loading || !username || !password}
@@ -198,7 +197,6 @@ export default function LoginPage() {
           </form>
         </div>
 
-        {/* Footer */}
         <div style={{ marginTop: 32, textAlign: 'center' }}>
           <p style={{ fontFamily: 'Hanken Grotesk', fontSize: 12, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#c4c7c7', opacity: 0.4 }}>
             Strictly Confidential • Authorized Personnel Only

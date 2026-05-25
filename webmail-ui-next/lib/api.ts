@@ -1,11 +1,18 @@
 const API_BASE = '/api'
 
+function getAuthHeader() {
+  if (typeof window === 'undefined') return {}
+  const auth = localStorage.getItem('mc_auth_token')
+  return auth ? { 'Authorization': `Basic ${auth}` } : {}
+}
+
 async function fetchAPI<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     credentials: 'include',
     ...options,
     headers: {
       ...(!(options.body instanceof FormData) && { 'Content-Type': 'application/json' }),
+      ...getAuthHeader(),
       ...options.headers,
     },
   })
@@ -24,7 +31,10 @@ export const api = {
         method: 'POST',
         body: JSON.stringify(credentials),
       }),
-    logout: () => fetchAPI('/v1/auth/session', { method: 'DELETE' }),
+    logout: () => {
+      if (typeof window !== 'undefined') localStorage.removeItem('mc_auth_token')
+      return fetchAPI('/v1/auth/session', { method: 'DELETE' })
+    },
     session: () => fetchAPI('/v1/auth/session'),
     me: () => fetchAPI('/v1/auth/me'),
   },
