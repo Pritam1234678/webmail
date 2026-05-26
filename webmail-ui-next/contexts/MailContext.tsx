@@ -13,12 +13,14 @@ interface MailContextType {
   loading: boolean; messageLoading: boolean; composeOpen: boolean;
   searchQuery: string; toasts: Toast[];
   hasMore: boolean;
+  currentPage: number;
   setSelectedFolder: (folder: string) => void;
   setSelectedMessage: (msg: Message | null) => void;
   setComposeOpen: (open: boolean) => void;
   setSearchQuery: (q: string) => void;
   refreshMessages: () => void;
-  loadMore: () => Promise<void>;
+  nextPage: () => void;
+  prevPage: () => void;
   logout: () => void;
   addToast: (type: Toast['type'], message: string) => void;
   sendEmail: (to: string, subject: string, body: string, cc?: string, bcc?: string, attachments?: File[]) => Promise<void>;
@@ -28,7 +30,7 @@ interface MailContextType {
 
 const MailContext = createContext<MailContextType | null>(null)
 const SESSION_KEY = 'mc_session_user'; const MAILBOX_KEY = 'mc_session_mailbox'
-const PAGE_SIZE = 50
+const PAGE_SIZE = 10
 
 export function MailProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
@@ -43,6 +45,7 @@ export function MailProvider({ children }: { children: ReactNode }) {
   const [searchQuery, setSearchQuery] = useState('')
   const [toasts, setToasts] = useState<Toast[]>([])
   const [hasMore, setHasMore] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
 
   const addToast = useCallback((type: Toast['type'], message: string) => {
     const id = Math.random().toString(36).slice(2)
@@ -50,20 +53,18 @@ export function MailProvider({ children }: { children: ReactNode }) {
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000)
   }, [])
 
-  const loadMessages = useCallback(async (mailboxId: string, folder: string, q: string, offset = 0) => {
-    if (offset === 0) setLoading(true)
+  const loadMessages = useCallback(async (mailboxId: string, folder: string, q: string, page = 1) => {
+    setLoading(true)
+    const offset = (page - 1) * PAGE_SIZE
     try {
       const data: any = await api.mailboxes.get(mailboxId, folder, q, PAGE_SIZE, offset)
       setMailbox(data.mailbox)
       const newMessages = data.messages || []
-      if (offset === 0) {
-        setMessages(newMessages)
-      } else {
-        setMessages(prev => [...prev, ...newMessages])
-      }
+      setMessages(newMessages)
       setHasMore(newMessages.length === PAGE_SIZE)
+      setCurrentPage(page)
     } catch (err: any) { 
-      if (offset === 0) setMessages([]) 
+      setMessages([]) 
     } finally { 
       setLoading(false) 
     }
@@ -79,14 +80,14 @@ export function MailProvider({ children }: { children: ReactNode }) {
       setUser(uObj); localStorage.setItem(SESSION_KEY, JSON.stringify(uObj))
       try {
         const mbData: any = await api.mailboxes.list(); const mb = mbData?.mailboxes?.[0] || mbData?.[0]
-        if (mb) { setMailbox(mb); localStorage.setItem(MAILBOX_KEY, JSON.stringify(mb)); await loadMessages(mb.id, 'inbox', '') }
+        if (mb) { setMailbox(mb); localStorage.setItem(MAILBOX_KEY, JSON.stringify(mb)); await loadMessages(mb.id, 'inbox', '', 1) }
       } catch (err) {}
     }).catch(() => { if (!u) router.replace('/login'); else setLoading(false) })
   }, [router, loadMessages])
 
   const setSelectedFolder = useCallback((folder: string) => {
     setSelectedFolderState(folder); setSelectedMessageState(null)
-    if (mailbox) loadMessages(mailbox.id, folder, searchQuery)
+    if (mailbox) loadMessages(mailbox.id, folder, searchQuery, 1)
   }, [mailbox, searchQuery, loadMessages])
 
   const setSelectedMessage = useCallback(async (msg: Message | null) => {
@@ -101,11 +102,17 @@ export function MailProvider({ children }: { children: ReactNode }) {
     } catch {} finally { setMessageLoading(false) }
   }, [])
 
-  const loadMore = useCallback(async () => {
-    if (mailbox && !loading && hasMore) {
-      await loadMessages(mailbox.id, selectedFolder, searchQuery, messages.length)
+  const nextPage = useCallback(() => {
+    if (mailbox && hasMore && !loading) {
+      loadMessages(mailbox.id, selectedFolder, searchQuery, currentPage + 1)
     }
-  }, [mailbox, loading, hasMore, selectedFolder, searchQuery, messages.length, loadMessages])
+  }, [mailbox, hasMore, loading, selectedFolder, searchQuery, currentPage, loadMessages])
+
+  const prevPage = useCallback(() => {
+    if (mailbox && currentPage > 1 && !loading) {
+      loadMessages(mailbox.id, selectedFolder, searchQuery, currentPage - 1)
+    }
+  }, [mailbox, currentPage, loading, selectedFolder, searchQuery, loadMessages])
 
   const archiveMessage = useCallback(async (msg: Message) => {
     try {
@@ -126,40 +133,28 @@ export function MailProvider({ children }: { children: ReactNode }) {
   }, [addToast])
 
   const refreshMessages = useCallback(() => {
-    if (mailbox) loadMessages(mailbox.id, selectedFolder, searchQuery)
-  }, [mailbox, selectedFolder, searchQuery, loadMessages])
+    if (mailbox) loadMessages(mailbox.id, selectedFolder, searchQuery, currentPage)
+  }, [mailbox, selectedFolder, searchQuery, currentPage, loadMessages])
 
   const logout = useCallback(async () => {
     await api.auth.logout().catch(() => {}); localStorage.clear(); router.replace('/login')
   }, [router])
 
-  const [lastSendTime, setLastSendTime] = useState(0)
-  const RATE_LIMIT_MS = 15000 // 15 seconds
-
   const sendEmail = useCallback(async (to: string, subject: string, body: string, cc?: string, bcc?: string, attachments?: File[]) => {
-    const now = Date.now()
-    if (now - lastSendTime < RATE_LIMIT_MS) {
-      const waitSec = Math.ceil((RATE_LIMIT_MS - (now - lastSendTime)) / 1000)
-      addToast('error', `Rate limit active. Please wait ${waitSec} seconds.`)
-      throw new Error('Rate limit exceeded')
-    }
-
     let p: any = (attachments && attachments.length > 0) ? new FormData() : { to, subject, body, cc, bcc }
     if (p instanceof FormData) {
       p.append('to', to); p.append('subject', subject); p.append('body', body)
       if (cc) p.append('cc', cc); if (bcc) p.append('bcc', bcc)
       attachments?.forEach(f => p.append('attachments[]', f))
     }
-    await api.messages.send(p); 
-    setLastSendTime(Date.now())
-    addToast('success', 'Email sent')
+    await api.messages.send(p); addToast('success', 'Email sent')
     if (selectedFolder === 'sent') refreshMessages()
-  }, [addToast, selectedFolder, refreshMessages, lastSendTime])
+  }, [addToast, selectedFolder, refreshMessages])
 
   return (
     <MailContext.Provider value={{
-      user, mailbox, messages, selectedMessage, selectedFolder, loading, messageLoading, composeOpen, searchQuery, toasts, hasMore,
-      setSelectedFolder, setSelectedMessage, setComposeOpen, setSearchQuery, refreshMessages, loadMore, logout, addToast, sendEmail, archiveMessage, deleteMessage
+      user, mailbox, messages, selectedMessage, selectedFolder, loading, messageLoading, composeOpen, searchQuery, toasts, hasMore, currentPage,
+      setSelectedFolder, setSelectedMessage, setComposeOpen, setSearchQuery, refreshMessages, nextPage, prevPage, logout, addToast, sendEmail, archiveMessage, deleteMessage
     }}>
       {children}
     </MailContext.Provider>

@@ -86,7 +86,7 @@ function Sidebar() {
 }
 
 function MessageList() {
-  const { messages, selectedMessage, setSelectedMessage, loading, selectedFolder, setSearchQuery, searchQuery, refreshMessages, hasMore, loadMore } = useMail()
+  const { messages, selectedMessage, setSelectedMessage, loading, selectedFolder, setSearchQuery, searchQuery, refreshMessages, hasMore, currentPage, nextPage, prevPage } = useMail()
   const [tab, setTab] = useState<'focused' | 'other'>('focused')
 
   const folderLabel: Record<string, string> = { inbox: 'Inbox', sent: 'Sent', drafts: 'Drafts', spam: 'Spam', trash: 'Trash', archive: 'Archive', starred: 'Starred' }
@@ -118,15 +118,26 @@ function MessageList() {
         )}
       </div>
 
-      <div style={{ padding: '16px 24px', borderBottom: `1px solid ${T.outline}` }}>
-        <div style={{ position: 'relative' }}>
+      <div style={{ padding: '16px 24px', borderBottom: `1px solid ${T.outline}`, display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ position: 'relative', flex: 1 }}>
           <span className="material-symbols-outlined" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 16, color: T.onSurfaceVar }}>search</span>
           <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onKeyDown={e => e.key === 'Enter' && refreshMessages()} placeholder="Search mail..." style={{ width: '100%', padding: '9px 12px 9px 36px', background: T.surfaceMid, border: `1px solid ${T.outline}`, borderRadius: 2, color: T.onSurface, fontFamily: 'Hanken Grotesk', fontSize: 14, outline: 'none', transition: 'border-color 0.2s' }} onFocus={e => (e.target as HTMLElement).style.borderColor = 'rgba(233,195,73,0.4)'} onBlur={e => (e.target as HTMLElement).style.borderColor = T.outline} />
+        </div>
+        
+        {/* Compact Pagination */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <button onClick={prevPage} disabled={currentPage === 1 || loading} style={{ background: 'none', border: `1px solid ${T.outline}`, borderRadius: 2, color: T.onSurfaceVar, cursor: (currentPage === 1 || loading) ? 'not-allowed' : 'pointer', padding: '4px', opacity: (currentPage === 1 || loading) ? 0.3 : 1 }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_left</span>
+          </button>
+          <span style={{ fontSize: 11, fontFamily: 'Hanken Grotesk', color: T.onSurfaceVar, minWidth: 20, textAlign: 'center' }}>{currentPage}</span>
+          <button onClick={nextPage} disabled={!hasMore || loading} style={{ background: 'none', border: `1px solid ${T.outline}`, borderRadius: 2, color: T.onSurfaceVar, cursor: (!hasMore || loading) ? 'not-allowed' : 'pointer', padding: '4px', opacity: (!hasMore || loading) ? 0.3 : 1 }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>chevron_right</span>
+          </button>
         </div>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        {loading && messages.length === 0 ? (
+        {loading ? (
           Array.from({ length: 5 }).map((_, i) => (
             <div key={i} style={{ padding: '20px 24px', borderBottom: `1px solid ${T.outline}`, display: 'flex', gap: 14 }}>
               <div style={{ width: 40, height: 40, borderRadius: 2, background: T.surfaceHigh, flexShrink: 0 }} />
@@ -143,36 +154,27 @@ function MessageList() {
             <p style={{ fontFamily: 'Hanken Grotesk', fontSize: 14 }}>No messages</p>
           </div>
         ) : (
-          <>
-            {messages.map((msg, i) => {
-              const isActive = selectedMessage?.id === msg.id
-              const isSentFolder = selectedFolder === 'sent'
-              const displayName = isSentFolder ? (msg.recipients[0] || 'Unknown Recipient') : (msg.senderName || msg.senderEmail || 'Unknown')
-              return (
-                <motion.button key={msg.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: (i % 50) * 0.03, duration: 0.3, ease: [0.2, 0, 0, 1] }} onClick={() => setSelectedMessage(msg)} style={{ width: '100%', textAlign: 'left', padding: '20px 24px', background: isActive ? T.surfaceMid : 'transparent', border: 'none', borderBottom: `1px solid ${T.outline}`, borderLeft: isActive ? `3px solid ${T.gold}` : '3px solid transparent', cursor: 'pointer', display: 'flex', gap: 14, fontFamily: 'inherit', transition: 'all 0.2s cubic-bezier(0.2,0,0,1)' }} onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = T.surfaceLow }} onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent' }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 2, flexShrink: 0, background: getAvatarBg(displayName), border: `1px solid ${T.outline}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Hanken Grotesk', fontSize: 12, fontWeight: 600, color: msg.unread ? T.gold : T.onSurfaceVar, letterSpacing: '0.05em' }}>{getInitials(displayName)}</div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                      <span style={{ fontFamily: 'Hanken Grotesk', fontSize: 12, fontWeight: 600, color: msg.unread ? T.gold : T.onSurfaceVar, letterSpacing: '0.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>
-                        {isSentFolder && <span style={{ color: T.gold, fontSize: 9, marginRight: 4 }}>TO:</span>}
-                        {displayName}
-                      </span>
-                      <span style={{ fontFamily: 'Hanken Grotesk', fontSize: 11, color: T.onSurfaceVar, opacity: 0.6, flexShrink: 0 }}>{formatTime(msg.timestamp)}</span>
-                    </div>
-                    <p style={{ fontFamily: 'Hanken Grotesk', fontSize: 14, fontWeight: msg.unread ? 500 : 400, color: T.onSurface, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 4 }}>{msg.subject || '(No subject)'}</p>
-                    <p style={{ fontFamily: 'Hanken Grotesk', fontSize: 13, color: T.onSurfaceVar, opacity: 0.7, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{msg.snippet || ''}</p>
+          messages.map((msg, i) => {
+            const isActive = selectedMessage?.id === msg.id
+            const isSentFolder = selectedFolder === 'sent'
+            const displayName = isSentFolder ? (msg.recipients[0] || 'Unknown Recipient') : (msg.senderName || msg.senderEmail || 'Unknown')
+            return (
+              <motion.button key={msg.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: (i % 10) * 0.03, duration: 0.3, ease: [0.2, 0, 0, 1] }} onClick={() => setSelectedMessage(msg)} style={{ width: '100%', textAlign: 'left', padding: '20px 24px', background: isActive ? T.surfaceMid : 'transparent', border: 'none', borderBottom: `1px solid ${T.outline}`, borderLeft: isActive ? `3px solid ${T.gold}` : '3px solid transparent', cursor: 'pointer', display: 'flex', gap: 14, fontFamily: 'inherit', transition: 'all 0.2s cubic-bezier(0.2,0,0,1)' }} onMouseEnter={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = T.surfaceLow }} onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.background = 'transparent' }}>
+                <div style={{ width: 40, height: 40, borderRadius: 2, flexShrink: 0, background: getAvatarBg(displayName), border: `1px solid ${T.outline}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Hanken Grotesk', fontSize: 12, fontWeight: 600, color: msg.unread ? T.gold : T.onSurfaceVar, letterSpacing: '0.05em' }}>{getInitials(displayName)}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                    <span style={{ fontFamily: 'Hanken Grotesk', fontSize: 12, fontWeight: 600, color: msg.unread ? T.gold : T.onSurfaceVar, letterSpacing: '0.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>
+                      {isSentFolder && <span style={{ color: T.gold, fontSize: 9, marginRight: 4 }}>TO:</span>}
+                      {displayName}
+                    </span>
+                    <span style={{ fontFamily: 'Hanken Grotesk', fontSize: 11, color: T.onSurfaceVar, opacity: 0.6, flexShrink: 0 }}>{formatTime(msg.timestamp)}</span>
                   </div>
-                </motion.button>
-              )
-            })}
-            {hasMore && (
-              <div style={{ padding: '24px', textAlign: 'center' }}>
-                <button onClick={loadMore} disabled={loading} style={{ padding: '10px 24px', background: T.surfaceHigh, border: `1px solid ${T.outline}`, borderRadius: 2, color: T.onSurface, fontFamily: 'Hanken Grotesk', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: loading ? 0.5 : 1 }}>
-                  {loading ? 'Loading...' : 'Load older messages'}
-                </button>
-              </div>
-            )}
-          </>
+                  <p style={{ fontFamily: 'Hanken Grotesk', fontSize: 14, fontWeight: msg.unread ? 500 : 400, color: T.onSurface, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 4 }}>{msg.subject || '(No subject)'}</p>
+                  <p style={{ fontFamily: 'Hanken Grotesk', fontSize: 13, color: T.onSurfaceVar, opacity: 0.7, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{msg.snippet || ''}</p>
+                </div>
+              </motion.button>
+            )
+          })
         )}
       </div>
     </div>
