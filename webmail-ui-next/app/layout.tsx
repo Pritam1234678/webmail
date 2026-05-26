@@ -5,7 +5,10 @@ export const metadata: Metadata = {
   title: 'Mail Codecoder',
   description: 'Elite Communication',
   icons: {
-    icon: '/logo.png',
+    icon: [
+      { url: '/logo.png', type: 'image/png' },
+    ],
+    apple: '/logo.png',
   }
 }
 

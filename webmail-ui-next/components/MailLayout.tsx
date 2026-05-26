@@ -186,9 +186,37 @@ function MessageView() {
   const [replyText, setReplyText] = useState(''); const [showReply, setShowReply] = useState(false)
   if (!selectedMessage) {
     return (
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: T.bg, color: T.onSurfaceVar }}>
-        <span className="material-symbols-outlined" style={{ fontSize: 48, marginBottom: 16, opacity: 0.2 }}>mail</span>
-        <p style={{ fontFamily: 'Hanken Grotesk', fontSize: 14, opacity: 0.5 }}>Select a message to read</p>
+      <div style={{ 
+        flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', 
+        justifyContent: 'center', background: T.bg, position: 'relative', overflow: 'hidden' 
+      }}>
+        {/* Cinematic Background for empty state */}
+        <div style={{ 
+          position: 'absolute', inset: 0, opacity: 0.03,
+          backgroundImage: 'url(/homepagebackgroung.webp)',
+          backgroundSize: 'cover', backgroundPosition: 'center',
+          filter: 'grayscale(100%)'
+        }} />
+        
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8, ease: [0.2, 0, 0, 1] }}
+          style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+        >
+          <img 
+            src="/logo.png" 
+            alt="CodeCoder Logo" 
+            style={{ width: 120, height: 'auto', opacity: 0.4, marginBottom: 24, filter: 'brightness(0) invert(1)' }} 
+          />
+          <div style={{ height: 1, width: 40, background: T.gold, opacity: 0.3, marginBottom: 24 }} />
+          <p style={{ 
+            fontFamily: 'Hanken Grotesk', fontSize: 12, fontWeight: 600, 
+            letterSpacing: '0.2em', textTransform: 'uppercase', color: T.onSurfaceVar, opacity: 0.3 
+          }}>
+            Select a message to read
+          </p>
+        </motion.div>
       </div>
     )
   }
