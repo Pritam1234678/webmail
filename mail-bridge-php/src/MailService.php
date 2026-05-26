@@ -46,9 +46,10 @@ final class MailService
             try { $imap->selectMailbox($folderName); } catch (Throwable $e) { return []; }
             $uids = $imap->searchUids($limit, $offset, $query);
             $headers = $imap->fetchHeaders($uids);
-            return array_map(function (array $message) use ($user, $folderId) {
+            $messages = array_map(function (array $message) use ($user, $folderId) {
                 $sender = $message['from'] ?: $user['email'];
                 return [
+                    'uid' => $message['uid'],
                     'id' => base64_encode($user['mailboxId'] . '|' . $folderId . '|' . $message['uid']),
                     'mailboxId' => $user['mailboxId'], 'folder' => $folderId,
                     'senderName' => $this->extractDisplayName($sender), 'senderEmail' => $this->extractEmail($sender),
@@ -57,6 +58,10 @@ final class MailService
                     'starred' => $message['starred'], 'tags' => [], 'attachments' => [],
                 ];
             }, $headers);
+
+            // Re-sort to ensure latest-first (IMAP might return ascending UIDs)
+            usort($messages, fn($a, $b) => $b['uid'] <=> $a['uid']);
+            return $messages;
         } finally { $imap->logout(); }
     }
 
@@ -70,7 +75,6 @@ final class MailService
             $imap->selectMailbox($folderName);
             $message = $imap->fetchMessage((int)$uid);
             if (!$message) return null;
-            // Mark as seen automatically when fetching detail
             $imap->setFlag((int)$uid, '\\Seen', true);
             $sender = $message['from'] ?: $user['email'];
             return [
