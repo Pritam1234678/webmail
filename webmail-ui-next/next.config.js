@@ -1,10 +1,16 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   env: {
-    NEXT_PUBLIC_BACKEND: 'https://mail.codecoder.in',
+    NEXT_PUBLIC_BACKEND: 'https://mailbackend.codecoder.in',
   },
-  // Note: /api/v1/* is handled by app/api/v1/[...path]/route.ts
-  // which acts as a proper cookie-forwarding proxy to the backend
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'https://mailbackend.codecoder.in/api/:path*',
+      },
+    ]
+  },
 }
 
 module.exports = nextConfig
