@@ -133,16 +133,28 @@ export function MailProvider({ children }: { children: ReactNode }) {
     await api.auth.logout().catch(() => {}); localStorage.clear(); router.replace('/login')
   }, [router])
 
+  const [lastSendTime, setLastSendTime] = useState(0)
+  const RATE_LIMIT_MS = 15000 // 15 seconds
+
   const sendEmail = useCallback(async (to: string, subject: string, body: string, cc?: string, bcc?: string, attachments?: File[]) => {
+    const now = Date.now()
+    if (now - lastSendTime < RATE_LIMIT_MS) {
+      const waitSec = Math.ceil((RATE_LIMIT_MS - (now - lastSendTime)) / 1000)
+      addToast('error', `Rate limit active. Please wait ${waitSec} seconds.`)
+      throw new Error('Rate limit exceeded')
+    }
+
     let p: any = (attachments && attachments.length > 0) ? new FormData() : { to, subject, body, cc, bcc }
     if (p instanceof FormData) {
       p.append('to', to); p.append('subject', subject); p.append('body', body)
       if (cc) p.append('cc', cc); if (bcc) p.append('bcc', bcc)
       attachments?.forEach(f => p.append('attachments[]', f))
     }
-    await api.messages.send(p)
+    await api.messages.send(p); 
+    setLastSendTime(Date.now())
+    addToast('success', 'Email sent')
     if (selectedFolder === 'sent') refreshMessages()
-  }, [selectedFolder, refreshMessages])
+  }, [addToast, selectedFolder, refreshMessages, lastSendTime])
 
   return (
     <MailContext.Provider value={{
