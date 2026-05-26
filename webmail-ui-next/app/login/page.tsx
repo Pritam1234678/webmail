@@ -27,7 +27,6 @@ export default function LoginPage() {
     setError(''); setLoading(true)
     try {
       const email = username.includes('@') ? username : `${username}@codecoder.in`
-      // Store token for Authorization header (bypasses cookie issues on Vercel)
       const token = btoa(`${email}:${password}`)
       try { localStorage.setItem('mc_auth_token', token) } catch {}
 
@@ -50,14 +49,44 @@ export default function LoginPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(to bottom, #0e0e0e, #131313)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       position: 'relative', overflow: 'hidden', flexDirection: 'column',
+      fontFamily: 'Hanken Grotesk, sans-serif',
     }}>
+      {/* ── Cinematic Background Image ── */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        backgroundImage: 'url(/homepagebackgroung.webp)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center top',
+        backgroundRepeat: 'no-repeat',
+      }} />
+
+      {/* Dark overlay */}
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(10,10,10,0.6)' }} />
+
       {/* Atmospheric glows */}
       <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
         <div style={{ position: 'absolute', top: '25%', left: '25%', width: 384, height: 384, background: 'rgba(233,195,73,0.05)', borderRadius: '50%', filter: 'blur(120px)' }} />
         <div style={{ position: 'absolute', bottom: '25%', right: '25%', width: 500, height: 500, background: 'rgba(200,198,197,0.04)', borderRadius: '50%', filter: 'blur(150px)' }} />
+      </div>
+
+      {/* Back to Home Button */}
+      <div style={{ position: 'absolute', top: 32, left: 32, zIndex: 20 }}>
+        <button
+          onClick={() => router.push('/')}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', 
+            cursor: 'pointer', color: '#c4c7c7', fontSize: 11, fontWeight: 600, 
+            letterSpacing: '0.1em', textTransform: 'uppercase'
+          }}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = '#e5e2e1'}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = '#c4c7c7'}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>arrow_back</span>
+          Back to Home
+        </button>
       </div>
 
       <motion.main
@@ -67,13 +96,13 @@ export default function LoginPage() {
         style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: 480, padding: '0 24px' }}
       >
         <div style={{
-          background: 'rgba(28,27,27,0.8)',
+          background: 'rgba(28,27,27,0.85)',
           backdropFilter: 'blur(30px)',
           WebkitBackdropFilter: 'blur(30px)',
-          border: '1px solid rgba(68,71,72,0.2)',
+          border: '1px solid rgba(68,71,72,0.25)',
           borderRadius: 8,
           padding: '48px',
-          boxShadow: '0 40px 80px -20px rgba(0,0,0,0.8)',
+          boxShadow: '0 40px 80px -20px rgba(0,0,0,0.85)',
           display: 'flex', flexDirection: 'column', alignItems: 'center',
         }}>
           <div style={{ marginBottom: 48 }}>

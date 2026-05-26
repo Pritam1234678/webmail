@@ -4,6 +4,9 @@ import './globals.css'
 export const metadata: Metadata = {
   title: 'Mail Codecoder',
   description: 'Elite Communication',
+  icons: {
+    icon: '/logo.png',
+  }
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

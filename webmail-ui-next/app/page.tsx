@@ -45,7 +45,7 @@ export default function OnboardingPage() {
       <div style={{
         position: 'absolute',
         inset: 0,
-        backgroundImage: 'url(/onboarding-bg.png)',
+        backgroundImage: 'url(/homepagebackgroung.webp)',
         backgroundSize: 'cover',
         backgroundPosition: 'center top',
         backgroundRepeat: 'no-repeat',
