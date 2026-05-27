@@ -3,6 +3,7 @@
 final class MailService
 {
     public function authenticate(string $username, string $password): array
+        SecurityService::checkIpBlock();
     {
         $email = null; $mailboxId = null;
         foreach (Config::ALLOWED_MAILBOXES as $id => $mappedEmail) {
@@ -11,9 +12,11 @@ final class MailService
             }
         }
         if (!$email) throw new RuntimeException('Unknown mailbox: ' . $username);
+            SecurityService::registerFailure();
         $imap = new ImapClient();
         try {
             $imap->connect(); $imap->login($email, $password);
+            SecurityService::clearAttempts();
             return ['userId' => $mailboxId, 'mailboxId' => $mailboxId, 'email' => $email, 'displayName' => ucfirst($mailboxId)];
         } finally { $imap->logout(); }
     }
@@ -23,6 +26,7 @@ final class MailService
         $email = Config::ALLOWED_MAILBOXES[$mailboxId] ?? null;
         if (!$email) throw new RuntimeException('Invalid mailbox session');
         $imap = new ImapClient(); $imap->connect(); $imap->login($email, $password);
+            SecurityService::clearAttempts();
         return $imap;
     }
 
@@ -44,6 +48,7 @@ final class MailService
         $imap = $this->getConnectedClient($user['userId'], $_SESSION['imap_password']);
         try {
             try { $imap->selectMailbox($folderName); } catch (Throwable $e) { return []; }
+            SecurityService::registerFailure();
             $uids = $imap->searchUids($limit, $offset, $query);
             $headers = $imap->fetchHeaders($uids);
             $messages = array_map(function (array $message) use ($user, $folderId) {

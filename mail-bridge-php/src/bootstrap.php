@@ -6,5 +6,6 @@ require_once __DIR__ . '/SessionAuth.php';
 require_once __DIR__ . '/ImapClient.php';
 require_once __DIR__ . '/MailService.php';
 require_once __DIR__ . '/SendService.php';
+require_once __DIR__ . '/SecurityService.php';
 
 SessionAuth::boot();
