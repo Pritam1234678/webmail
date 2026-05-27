@@ -3,21 +3,26 @@
 final class MailService
 {
     public function authenticate(string $username, string $password): array
-        SecurityService::checkIpBlock();
     {
+        SecurityService::checkIpBlock();
         $email = null; $mailboxId = null;
         foreach (Config::ALLOWED_MAILBOXES as $id => $mappedEmail) {
             if ($username === $id || $username === $mappedEmail) {
                 $email = $mappedEmail; $mailboxId = $id; break;
             }
         }
-        if (!$email) throw new RuntimeException('Unknown mailbox: ' . $username);
+        if (!$email) {
             SecurityService::registerFailure();
+            throw new RuntimeException('Unknown mailbox: ' . $username);
+        }
         $imap = new ImapClient();
         try {
             $imap->connect(); $imap->login($email, $password);
             SecurityService::clearAttempts();
             return ['userId' => $mailboxId, 'mailboxId' => $mailboxId, 'email' => $email, 'displayName' => ucfirst($mailboxId)];
+        } catch (Throwable $e) {
+            SecurityService::registerFailure();
+            throw $e;
         } finally { $imap->logout(); }
     }
 
@@ -26,13 +31,12 @@ final class MailService
         $email = Config::ALLOWED_MAILBOXES[$mailboxId] ?? null;
         if (!$email) throw new RuntimeException('Invalid mailbox session');
         $imap = new ImapClient(); $imap->connect(); $imap->login($email, $password);
-            SecurityService::clearAttempts();
         return $imap;
     }
 
     public function listMailboxes(array $user): array
     {
-        $imap = $this->getConnectedClient($user['userId'], $_SESSION['imap_password']);
+        $imap = $this->getConnectedClient($user['userId'], $_SESSION['imap_password'] ?? '');
         try {
             return [[
                 'id' => $user['mailboxId'], 'email' => $user['email'], 'name' => $user['displayName'],
@@ -45,10 +49,9 @@ final class MailService
     public function listMessages(array $user, string $folderId, string $query = "", int $limit = 50, int $offset = 0): array
     {
         $folderName = Config::FOLDER_MAP[$folderId] ?? 'INBOX';
-        $imap = $this->getConnectedClient($user['userId'], $_SESSION['imap_password']);
+        $imap = $this->getConnectedClient($user['userId'], $_SESSION['imap_password'] ?? '');
         try {
             try { $imap->selectMailbox($folderName); } catch (Throwable $e) { return []; }
-            SecurityService::registerFailure();
             $uids = $imap->searchUids($limit, $offset, $query);
             $headers = $imap->fetchHeaders($uids);
             $messages = array_map(function (array $message) use ($user, $folderId) {
@@ -64,7 +67,6 @@ final class MailService
                 ];
             }, $headers);
 
-            // Re-sort to ensure latest-first (IMAP might return ascending UIDs)
             usort($messages, fn($a, $b) => $b['uid'] <=> $a['uid']);
             return $messages;
         } finally { $imap->logout(); }
@@ -75,7 +77,7 @@ final class MailService
         [$mailboxId, $folderId, $uid] = explode('|', base64_decode($messageId));
         if ($mailboxId !== $user['mailboxId']) throw new RuntimeException('Mailbox mismatch');
         $folderName = Config::FOLDER_MAP[$folderId] ?? 'INBOX';
-        $imap = $this->getConnectedClient($user['userId'], $_SESSION['imap_password']);
+        $imap = $this->getConnectedClient($user['userId'], $_SESSION['imap_password'] ?? '');
         try {
             $imap->selectMailbox($folderName);
             $message = $imap->fetchMessage((int)$uid);
@@ -96,7 +98,7 @@ final class MailService
     public function updateMessage(array $user, string $messageId, array $payload): void
     {
         [$mailboxId, $folderId, $uid] = explode('|', base64_decode($messageId));
-        $imap = $this->getConnectedClient($user['userId'], $_SESSION['imap_password']);
+        $imap = $this->getConnectedClient($user['userId'], $_SESSION['imap_password'] ?? '');
         try {
             $imap->selectMailbox(Config::FOLDER_MAP[$folderId] ?? 'INBOX');
             if (isset($payload['unread'])) $imap->setFlag((int)$uid, '\\Seen', !$payload['unread']);
@@ -111,7 +113,7 @@ final class MailService
     public function deleteMessage(array $user, string $messageId): void
     {
         [$mailboxId, $folderId, $uid] = explode('|', base64_decode($messageId));
-        $imap = $this->getConnectedClient($user['userId'], $_SESSION['imap_password']);
+        $imap = $this->getConnectedClient($user['userId'], $_SESSION['imap_password'] ?? '');
         try {
             $imap->selectMailbox(Config::FOLDER_MAP[$folderId] ?? 'INBOX');
             $imap->deleteMessage((int)$uid);
