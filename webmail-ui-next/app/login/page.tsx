@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '@/lib/api'
@@ -14,23 +14,48 @@ export default function LoginPage() {
   const [userFocus, setUserFocus] = useState(false)
   const [passFocus, setPassFocus] = useState(false)
   const [btnHover, setBtnHover] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const turnstileRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     api.auth.session().then((d: any) => {
       if (d?.session || d?.user) router.replace('/mail')
     }).catch(() => {})
+
+    // Initialize Turnstile
+    const checkTurnstile = setInterval(() => {
+      if ((window as any).turnstile && turnstileRef.current) {
+        (window as any).turnstile.render(turnstileRef.current, {
+          sitekey: '0x4AAAAAADW9JLvfmwwOXoS6',
+          callback: (token: string) => {
+            setTurnstileToken(token)
+          },
+        })
+        clearInterval(checkTurnstile)
+      }
+    }, 500)
+    return () => clearInterval(checkTurnstile)
   }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!username || !password) return
+    if (!turnstileToken) {
+      setError('Please complete the security check.')
+      return
+    }
+
     setError(''); setLoading(true)
     try {
       const email = username.includes('@') ? username : `${username}@codecoder.in`
       const token = btoa(`${email}:${password}`)
       try { localStorage.setItem('mc_auth_token', token) } catch {}
 
-      const data: any = await api.auth.login({ username: username.trim(), password })
+      const data: any = await api.auth.login({ 
+        username: username.trim(), 
+        password,
+        turnstileToken 
+      })
       
       const userObj = data?.session || data?.user || data || {
         email: email,
@@ -40,7 +65,11 @@ export default function LoginPage() {
       router.replace('/mail')
     } catch (err: any) {
       setError(err.message || 'Invalid credentials. Check username/password.')
-      try { localStorage.removeItem('mc_auth_token') } catch {}
+      try { 
+        localStorage.removeItem('mc_auth_token')
+        if ((window as any).turnstile) (window as any).turnstile.reset()
+        setTurnstileToken(null)
+      } catch {}
     } finally {
       setLoading(false)
     }
@@ -151,7 +180,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div style={{ marginBottom: 40, position: 'relative' }}>
+            <div style={{ marginBottom: 32, position: 'relative' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                 <label style={{
                   fontFamily: 'Hanken Grotesk', fontSize: 12, fontWeight: 600,
@@ -185,6 +214,11 @@ export default function LoginPage() {
               </div>
             </div>
 
+            {/* Turnstile Widget */}
+            <div style={{ marginBottom: 32, display: 'flex', justifyContent: 'center' }}>
+                <div ref={turnstileRef} className="cf-turnstile"></div>
+            </div>
+
             <AnimatePresence>
               {error && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
@@ -196,7 +230,7 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={loading || !username || !password}
+              disabled={loading || !username || !password || !turnstileToken}
               onMouseEnter={() => setBtnHover(true)}
               onMouseLeave={() => setBtnHover(false)}
               style={{
@@ -207,11 +241,11 @@ export default function LoginPage() {
                 letterSpacing: '0.12em', textTransform: 'uppercase',
                 padding: '16px 24px',
                 border: btnHover ? '1px solid rgba(233,195,73,0.5)' : '1px solid rgba(68,71,72,0.3)',
-                borderRadius: 2, cursor: loading ? 'not-allowed' : 'pointer',
+                borderRadius: 2, cursor: (loading || !turnstileToken) ? 'not-allowed' : 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
                 transition: 'all 0.5s cubic-bezier(0.2,0,0,1)',
                 boxShadow: btnHover ? '0 0 20px rgba(233,195,73,0.1)' : 'none',
-                opacity: (loading || !username || !password) ? 0.5 : 1,
+                opacity: (loading || !username || !password || !turnstileToken) ? 0.5 : 1,
               }}
             >
               {loading ? (
