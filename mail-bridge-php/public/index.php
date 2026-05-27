@@ -30,6 +30,7 @@ function readJsonBody(): array
 try {
     if ($method === 'POST' && $path === '/v1/auth/session') {
         $payload = readJsonBody();
+        SecurityService::verifyTurnstile($payload['turnstileToken'] ?? null);
         $user = $mailService->authenticate($payload['username'] ?? '', $payload['password'] ?? '');
         $_SESSION['imap_password'] = $payload['password'] ?? '';
         SessionAuth::login($user['userId'], $user['email']);
@@ -73,6 +74,7 @@ try {
 
     if ($method === 'PATCH' && preg_match('#^/v1/messages/(.+)$#', $path, $matches)) {
         $payload = readJsonBody();
+        SecurityService::verifyTurnstile($payload['turnstileToken'] ?? null);
         $mailService->updateMessage(SessionAuth::requireUser(), urldecode($matches[1]), $payload);
         Response::json(['ok' => true]);
     }

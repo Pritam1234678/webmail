@@ -27,11 +27,43 @@ final class SecurityService
             
             if ($diff < 900) { // 15 minutes lockout
                 $wait = ceil((900 - $diff) / 60);
-                throw new RuntimeException("Too many failed attempts. Your IP is temporarily blocked. Please try again in $wait minutes.");
+                throw new RuntimeException("Too many failed attempts. IP temporarily blocked. Try again in $wait minutes.");
             } else {
-                // Time passed, reset for another chance
                 self::clearAttempts();
             }
+        }
+    }
+
+    public static function verifyTurnstile(?string $token): void
+    {
+        if (!$token) {
+            throw new RuntimeException('Security verification token missing.');
+        }
+
+        $secret = '0x4AAAAAADW9JIobaeU9IYhKahFzO2gh61A';
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+
+        $url = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+        $data = [
+            'secret' => $secret,
+            'response' => $token,
+            'remoteip' => $ip
+        ];
+
+        $options = [
+            'http' => [
+                'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+                'method'  => 'POST',
+                'content' => http_build_query($data)
+            ]
+        ];
+
+        $context  = stream_context_create($options);
+        $response = file_get_contents($url, false, $context);
+        $result = json_decode($response, true);
+
+        if (!$result || !($result['success'] ?? false)) {
+            throw new RuntimeException('Security verification failed. Please try again.');
         }
     }
 
