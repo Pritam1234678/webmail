@@ -207,12 +207,12 @@ function MessageView() {
           <img 
             src="/logo.png" 
             alt="CodeCoder Logo" 
-            style={{ width: 120, height: 'auto', opacity: 0.4, marginBottom: 24, filter: 'brightness(0) invert(1)' }} 
+            style={{ width: 300, height: 'auto', opacity: 0.6, marginBottom: 32, filter: 'drop-shadow(0 0 30px rgba(233,195,73,0.15))' }} 
           />
-          <div style={{ height: 1, width: 40, background: T.gold, opacity: 0.3, marginBottom: 24 }} />
+          <div style={{ height: 1, width: 60, background: T.gold, opacity: 0.4, marginBottom: 32 }} />
           <p style={{ 
-            fontFamily: 'Hanken Grotesk', fontSize: 12, fontWeight: 600, 
-            letterSpacing: '0.2em', textTransform: 'uppercase', color: T.onSurfaceVar, opacity: 0.3 
+            fontFamily: 'Hanken Grotesk', fontSize: 13, fontWeight: 600, 
+            letterSpacing: '0.3em', textTransform: 'uppercase', color: T.onSurface, opacity: 0.4 
           }}>
             Select a message to read
           </p>
